@@ -1,0 +1,18 @@
+# Node modules
+node_modules/
+
+# example/demo node_modules
+example/demo/node_modules/
+
+# Dist build output
+dist/
+
+# Vite temporary files
+example/demo/dist/
+
+# Logs
+*.log
+
+# Editor folders
+.vscode/
+.idea/
