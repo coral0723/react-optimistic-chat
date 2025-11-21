@@ -1,21 +1,23 @@
-import ChatMessage from "../../../src/components/ChatMessage";
+import { Routes, Route } from "react-router-dom";
+import LinkButton from "./components/LinkButton";
+import ChatMessagePlayground from "./pages/ChatMessagePlayGround"
 
-function App() {
+export default function App() {
   return (
-    <div className="bg-white max-w-2xl p-2 mx-auto">
-      <ChatMessage
-        id={1}
-        role="AI"
-        content="안녕하세요 무엇을 도와드릴까요"
-      />
-      <ChatMessage
-        id={2}
-        role="USER"
-        content="아무것도 아니야"
-      />
-      
+    <div className="p-10">
+      <h1 className="text-2xl font-bold mb-6">React Optimistic Chat Examples</h1>
+
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <div className="space-y-3 max-w-xs">
+              <LinkButton label="ChatMessage Playground" to="/chat-message" />
+            </div>
+          }
+        />
+        <Route path="/chat-message" element={<ChatMessagePlayground />} />
+      </Routes>
     </div>
   );
 }
-
-export default App;
