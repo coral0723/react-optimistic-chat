@@ -1,11 +1,8 @@
+import type { Message } from "../types/Message";
 import LoadingSpinner from "./internal/LoadingSpinner";
 import React from "react";
 
-type Props = {
-  id: number;
-  role: "AI" | "USER";
-  content: string;
-  
+type Props = Message & {
   /* 로딩 스피너 표시 여부 */
   isLoading?: boolean;
 
