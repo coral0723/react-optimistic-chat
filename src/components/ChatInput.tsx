@@ -1,10 +1,50 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function ChatInput() {
-  const [text, setText] = useState("");
+type Props = {
+  /* 전송 버튼 클릭(또는 Enter) 시 호출되는 콜백 */
+  onSend: (value: string) => void;
+
+  /* 음성 모드 비활성화: true면 항상 send 버튼만 표시 */
+  disableVoice?: boolean;
+
+  /* placeholder 텍스트 */
+  placeholder?: string;
+
+  /* 전체 wrapper 커스텀 클래스 */
+  className?: string;
+
+  /* textarea 커스텀 클래스 */
+  inputClassName?: string;
+
+  /* button 커스텀 클래스 */
+  buttonClassName?: string;
+
+  /* textarea 최대 높이(px) */
+  maxHeight?: number;
+
+  /* 컨트롤드 모드 용 value */
+  value?: string;
+
+  /* 컨트롤드 모드 용 onChange */
+  onChange?: (value: string) => void;
+}
+
+export default function ChatInput({
+  onSend,
+  disableVoice = false,
+  placeholder = "메시지를 입력하세요...",
+  className = "",
+  inputClassName = "",
+  buttonClassName = "",
+  maxHeight = 150,
+  value,
+  onChange,
+}: Props) {
+  const [innerText, setInnerText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const MAX_HEIGHT = 150;
+  const isControlled = value !== undefined;
+  const text = isControlled ? value! : innerText;
 
   // 높이 자동 조절 + 최대 높이 설정
   useEffect(() => {
@@ -12,15 +52,40 @@ export default function ChatInput() {
     if (!el) return;
 
     el.style.height = "auto";
-
-    const newHeight = Math.min(el.scrollHeight, MAX_HEIGHT);
-    el.style.height = newHeight + "px";
+    const newHeight = Math.min(el.scrollHeight, maxHeight);
+    el.style.height = `${newHeight}px`;
 
     // 150px 이상이면 내부 스크롤 가능하도록
-    el.style.overflowY = el.scrollHeight > MAX_HEIGHT ? "auto" : "hidden";
-  }, [text]);
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [text, maxHeight]);
 
   const isEmpty = text.trim().length === 0;
+  const isVoiceMode = !disableVoice && isEmpty; // 지금은 아이콘만 바꾸고 기능은 나중에 추가 예정
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const next = e.target.value;
+    if (!isControlled) {
+      setInnerText(next);
+    }
+
+    // onChange가 없다면(undefined) 실행 안 함
+    onChange?.(next);
+  }
+
+  const handleSend = () => {
+    // 음성 모드일 때는 나중에 Web Speech API 연동용 -> 지금은 아무것도 안 함
+    if (isVoiceMode) return;
+
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    onSend(trimmed);
+
+    // uncontrolled일 때만 값 비우기
+    if (!isControlled) {
+      setInnerText("");
+    }
+  }
 
   return (
     <>
@@ -41,34 +106,44 @@ export default function ChatInput() {
         }
       `}</style>
 
-      <div className="flex items-end border border-gray-300 p-2 rounded-3xl">
+      <div 
+        className={`
+          flex border border-gray-300 p-2 rounded-3xl
+          ${className}
+        `}>
         <textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleChange}
           className={`
             w-full px-3 py-2
             border-none
             text-sm resize-none
             focus:outline-none
             overflow-hidden chatinput-scroll
+            ${inputClassName}
           `}
-          placeholder="메시지를 입력하세요…"
+          placeholder={placeholder}
           rows={1}
         />
         <button
+          type="button" // submit 방지
+          onClick={handleSend}
+          disabled={!isVoiceMode && isEmpty}
           className={`
-            w-10 h-10 ml-2
+            w-10 h-10 ml-2 mt-auto
             p-2 rounded-3xl flex items-center justify-center
             relative overflow-hidden flex-shrink-0
+            ${buttonClassName}
           `}
         >
+          {/* 마이크 svg */}
           <div
             className={`
               absolute inset-0 flex items-center justify-center
               bg-gray-100 text-gray-700
               transition-opacity duration-100 ease-in
-              ${isEmpty ? "opacity-100" : "opacity-0"}  
+              ${isVoiceMode ? "opacity-100" : "opacity-0"}  
             `}
           >
             <svg
@@ -86,7 +161,7 @@ export default function ChatInput() {
               <rect x="9" y="2" width="6" height="13" rx="3" />
             </svg>
           </div>
-
+          {/* send svg */}
           <div
             className={`
               absolute inset-0 flex items-center justify-center
