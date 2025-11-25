@@ -10,7 +10,7 @@ declare global {
 
 type Props = {
   /* 전송 버튼 클릭(또는 Enter) 시 호출되는 콜백 */
-  onSend: (value: string) => void;
+  onSend: (value: string) => void | Promise<void>;
 
   /* 음성 모드 비활성화: true면 항상 send 버튼만 표시 */
   disableVoice?: boolean;
@@ -50,6 +50,7 @@ export default function ChatInput({
 }: Props) {
   const [innerText, setInnerText] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [isSending, setIsSending] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isControlled = value !== undefined;
@@ -82,15 +83,24 @@ export default function ChatInput({
     onChange?.(next);
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
+    if (isVoiceMode || isEmpty || isSending) return;
+
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    onSend(trimmed);
+    setIsSending(true); // 전송 시작 -> 버튼 비활성화
 
-    // uncontrolled일 때만 값 비우기
-    if (!isControlled) {
-      setInnerText("");
+    try {
+      const result = onSend(trimmed);
+      if (result instanceof Promise) {
+        await result; // 비동기 함수라면 기다림
+      }
+      // uncontrolled일 때만 값 비우기
+      if (!isControlled)
+        setInnerText("");
+    } finally {
+      setIsSending(false); // 전송 완료 -> 다시 활성화
     }
   }
 
@@ -221,6 +231,7 @@ export default function ChatInput({
               transition-opacity duration-100 ease-in
               bg-black text-white
               ${(isEmpty || isVoiceMode) ? "opacity-0" : "opacity-100"}  
+              ${isSending ? "bg-gray-400" : ""}
             `}
           >
             <svg xmlns="http://www.w3.org/2000/svg" 
