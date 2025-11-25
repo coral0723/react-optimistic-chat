@@ -1,4 +1,12 @@
 import { useState, useRef, useEffect } from "react";
+import type { SpeechRecognition as ISpeechRecognition } from "../types/Speech";
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => ISpeechRecognition;
+    webkitSpeechRecognition: new () => ISpeechRecognition;
+  }
+}
 
 type Props = {
   /* 전송 버튼 클릭(또는 Enter) 시 호출되는 콜백 */
@@ -40,11 +48,13 @@ export default function ChatInput({
   value,
   onChange,
 }: Props) {
-  const [innerText, setInnerText] = useState("");
+  const [innerText, setInnerText] = useState<string>("");
+  const [isRecording, setIsRecording] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isControlled = value !== undefined;
   const text = isControlled ? value! : innerText;
+  const recognition = useRef<ISpeechRecognition | null>(null);
 
   // 높이 자동 조절 + 최대 높이 설정
   useEffect(() => {
@@ -60,7 +70,7 @@ export default function ChatInput({
   }, [text, maxHeight]);
 
   const isEmpty = text.trim().length === 0;
-  const isVoiceMode = !disableVoice && isEmpty; // 지금은 아이콘만 바꾸고 기능은 나중에 추가 예정
+  const isVoiceMode = !disableVoice && (isEmpty || isRecording);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
@@ -73,9 +83,6 @@ export default function ChatInput({
   }
 
   const handleSend = () => {
-    // 음성 모드일 때는 나중에 Web Speech API 연동용 -> 지금은 아무것도 안 함
-    if (isVoiceMode) return;
-
     const trimmed = text.trim();
     if (!trimmed) return;
 
@@ -84,6 +91,52 @@ export default function ChatInput({
     // uncontrolled일 때만 값 비우기
     if (!isControlled) {
       setInnerText("");
+    }
+  }
+
+  const handleRecord = () => {
+    try {
+      if(!isRecording) {
+        /* 브라우저마다 다른 SpeechRecognition 생성자 가져오기
+        Chrome: webkitSpeechRecognition
+        다른 일부 브라우저: SpeechRecognition */
+        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Speech) {
+          console.error("Browser does not support SpeechRecognition");
+          alert("현재 브라우저에서는 음성 인식 기능을 사용할 수 없습니다.");
+          return;
+        }
+
+        recognition.current = new Speech();
+        recognition.current.lang = "ko-KR";
+        recognition.current.continuous = true; // 끊기지 않고 연속해서 듣게 하는 설정
+        recognition.current.interimResults = true; // 중간에 나오는 임시 텍스트도 받는 설정
+
+        recognition.current.onstart = () => {
+          setIsRecording(true);
+        };
+
+        recognition.current.onend = () => {
+          setIsRecording(false);
+        };
+
+        // 말하는 동안 녹음 내용 반영
+        recognition.current.onresult = (event) => {
+          const newTranscript = Array.from(event.results)
+            .map((r) => r[0]?.transcript)
+            .join("");
+          
+          setInnerText(newTranscript);
+        }
+
+        recognition.current?.start();
+      } else {
+        recognition.current?.stop();
+      }
+    } catch (e) {
+      console.error("Speech Recognition error: ", e);
+      alert("음성 입력을 사용할 수 없습니다. 텍스트로 입력해주세요.");
+      setIsRecording(false);
     }
   }
 
@@ -128,7 +181,7 @@ export default function ChatInput({
         />
         <button
           type="button" // submit 방지
-          onClick={handleSend}
+          onClick={isVoiceMode || isRecording ? handleRecord : handleSend}
           disabled={!isVoiceMode && isEmpty}
           className={`
             w-10 h-10 ml-2 mt-auto
@@ -141,9 +194,9 @@ export default function ChatInput({
           <div
             className={`
               absolute inset-0 flex items-center justify-center
-              bg-gray-100 text-gray-700
               transition-opacity duration-100 ease-in
               ${isVoiceMode ? "opacity-100" : "opacity-0"}  
+              ${isRecording ? "bg-red-600 text-white" : "bg-gray-100 text-gray-700"}
             `}
           >
             <svg
@@ -167,7 +220,7 @@ export default function ChatInput({
               absolute inset-0 flex items-center justify-center
               transition-opacity duration-100 ease-in
               bg-black text-white
-              ${isEmpty ? "opacity-0" : "opacity-100"}  
+              ${(isEmpty || isVoiceMode) ? "opacity-0" : "opacity-100"}  
             `}
           >
             <svg xmlns="http://www.w3.org/2000/svg" 
