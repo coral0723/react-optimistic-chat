@@ -66,6 +66,18 @@ export default function ChatInputPlayGround() {
           }}
         />
       </div>
+      <div className="mb-2 w-full flex flex-col">
+        <span className="self-center text-xl font-bold mb-1">
+          {"<async/await>"}
+        </span>
+        <ChatInput
+          onSend={async (t: string) => {
+            await new Promise(r => setTimeout(r, 2000));
+            setText(t);
+            console.log("sended", t);
+          }}
+        />
+      </div>
     </div>
   )
 }
