@@ -8,6 +8,11 @@ declare global {
   }
 }
 
+type ButtonConfig = {
+  className?: string;
+  icon?: React.ReactNode;
+}
+
 type Props = {
   /* 전송 버튼 클릭(또는 Enter) 시 호출되는 콜백 */
   onSend: (value: string) => void | Promise<void>;
@@ -24,8 +29,11 @@ type Props = {
   /* textarea 커스텀 클래스 */
   inputClassName?: string;
 
-  /* button 커스텀 클래스 */
-  buttonClassName?: string;
+  /* button 상태 별 커스텀 클래스 */
+  micButton?: ButtonConfig;        // 1. 마이크 버튼
+  recordingButton?: ButtonConfig;  // 2. 녹음 중 버튼
+  sendButton?: ButtonConfig;       // 3. 기본 send 버튼
+  sendingButton?: ButtonConfig;    // 4. 전송 중 버튼
 
   /* textarea 최대 높이(px) */
   maxHeight?: number;
@@ -43,10 +51,13 @@ export default function ChatInput({
   placeholder = "메시지를 입력하세요...",
   className = "",
   inputClassName = "",
-  buttonClassName = "",
   maxHeight = 150,
   value,
   onChange,
+  micButton,
+  recordingButton,
+  sendButton,
+  sendingButton,
 }: Props) {
   const [innerText, setInnerText] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -92,13 +103,14 @@ export default function ChatInput({
     setIsSending(true); // 전송 시작 -> 버튼 비활성화
 
     try {
+      // uncontrolled일 때만 값 비우기
+      if (!isControlled)
+        setInnerText("");
+
       const result = onSend(trimmed);
       if (result instanceof Promise) {
         await result; // 비동기 함수라면 기다림
       }
-      // uncontrolled일 때만 값 비우기
-      if (!isControlled)
-        setInnerText("");
     } finally {
       setIsSending(false); // 전송 완료 -> 다시 활성화
     }
@@ -150,6 +162,16 @@ export default function ChatInput({
     }
   }
 
+  // 어떤 버튼을 보여줄지 결정
+  const getActivityLayer = () => {
+    if (isSending) return "sending";
+    if (isRecording) return "recording";
+    if (isVoiceMode) return "mic";
+    return "send";
+  }
+
+  const activeLayer = getActivityLayer();
+
   return (
     <>
       {/* 커스텀 스크롤바 스타일 */}
@@ -178,75 +200,112 @@ export default function ChatInput({
           ref={textareaRef}
           value={text}
           onChange={handleChange}
+          placeholder={placeholder}
+          rows={1}
           className={`
             w-full px-3 py-2
-            border-none
-            text-sm resize-none
-            focus:outline-none
+            resize-none border-none
+            text-sm focus:outline-none
             overflow-hidden chatinput-scroll
             ${inputClassName}
           `}
-          placeholder={placeholder}
-          rows={1}
         />
         <button
           type="button" // submit 방지
-          onClick={isVoiceMode || isRecording ? handleRecord : handleSend}
-          disabled={!isVoiceMode && isEmpty}
-          className={`
-            w-10 h-10 ml-2 mt-auto
-            p-2 rounded-3xl flex items-center justify-center
-            relative overflow-hidden flex-shrink-0
-            ${buttonClassName}
-          `}
+          disabled={isSending}
+          onClick={
+            activeLayer === "mic" || activeLayer === "recording"
+              ? handleRecord
+              : handleSend
+          }
+          className="relative w-10 h-10 ml-2 mt-auto flex-shrink-0"
         >
-          {/* 마이크 svg */}
+          {/* mic layer */}
           <div
             className={`
-              absolute inset-0 flex items-center justify-center
-              transition-opacity duration-100 ease-in
-              ${isVoiceMode ? "opacity-100" : "opacity-0"}  
-              ${isRecording ? "bg-red-600 text-white" : "bg-gray-100 text-gray-700"}
+              absolute inset-0 flex items-center justify-center rounded-3xl
+              transition-opacity duration-150
+              ${activeLayer === "mic" ? "opacity-100" : "opacity-0"}
+              bg-gray-100 text-gray-700
+              ${micButton?.className || ""}
             `}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 19v3" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-              <rect x="9" y="2" width="6" height="13" rx="3" />
-            </svg>
+            {micButton?.icon || (
+              <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
+                <path d="M12 19v3" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <rect x="9" y="2" width="6" height="13" rx="3" />
+              </svg>
+            )}
           </div>
-          {/* send svg */}
+
+          {/* recording layer */}
           <div
             className={`
-              absolute inset-0 flex items-center justify-center
-              transition-opacity duration-100 ease-in
-              bg-black text-white
-              ${(isEmpty || isVoiceMode) ? "opacity-0" : "opacity-100"}  
-              ${isSending ? "bg-gray-400" : ""}
+              absolute inset-0 flex items-center justify-center rounded-3xl
+              transition-opacity duration-150
+              ${activeLayer === "recording" ? "opacity-100" : "opacity-0"}
+              bg-red-600 text-white
+              ${recordingButton?.className || ""}
             `}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" 
-              width="20" 
-              height="20" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              stroke-width="2" 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-            >
-              <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
-              <path d="M6 12h16"/>
-            </svg>
+            {recordingButton?.icon || (
+              <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
+                <path d="M12 19v3" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <rect x="9" y="2" width="6" height="13" rx="3" />
+              </svg>
+            )}
+          </div>
+
+          {/* send layer */}
+          <div
+            className={`
+              absolute inset-0 flex items-center justify-center rounded-3xl
+              transition-opacity duration-150
+              ${activeLayer === "send" ? "opacity-100" : "opacity-0"}
+              bg-black text-white
+              ${sendButton?.className || ""}
+            `}
+          >
+            {sendButton?.icon || (
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 22 24" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2" 
+              >
+                <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
+                <path d="M6 12h16"/>
+              </svg>
+            )}
+          </div>
+
+          {/* sending layer */}
+          <div
+            className={`
+              absolute inset-0 flex items-center justify-center rounded-3xl
+              transition-opacity duration-150
+              ${activeLayer === "sending" ? "opacity-100" : "opacity-0"}
+              bg-gray-400 text-white
+              ${sendingButton?.className || ""}
+            `}
+          >
+            {sendingButton?.icon || (
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 22 24" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2" 
+              >
+                <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
+                <path d="M6 12h16"/>
+              </svg>
+            )}
           </div>
         </button>
       </div>
