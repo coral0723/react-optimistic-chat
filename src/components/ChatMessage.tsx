@@ -1,5 +1,5 @@
 import type { Message } from "../types/Message";
-import LoadingSpinner from "./internal/LoadingSpinner";
+import LoadingSpinner from "./indicators/LoadingSpinner";
 import React from "react";
 
 type Props = Message & {
