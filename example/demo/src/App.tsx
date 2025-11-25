@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import LinkButton from "./components/LinkButton";
 import ChatMessagePlayground from "./pages/ChatMessagePlayGround"
 import ChatListPlayGround from "./pages/ChatListPlayGround";
+import ChatInputPlayGround from "./pages/ChatInputPlayGround";
 
 export default function App() {
   return (
@@ -15,11 +16,13 @@ export default function App() {
             <div className="space-y-3 max-w-xs">
               <LinkButton label="ChatMessage Playground" to="/chat-message" />
               <LinkButton label="ChatList Playground" to="/chat-list" />
+              <LinkButton label="ChatInput Playground" to="/chat-lnput" />
             </div>
           }
         />
         <Route path="/chat-message" element={<ChatMessagePlayground />} />
         <Route path="/chat-list" element={<ChatListPlayGround/>} />
+        <Route path="/chat-lnput" element={<ChatInputPlayGround/>} />
       </Routes>
     </div>
   );
