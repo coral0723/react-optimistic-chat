@@ -3,9 +3,6 @@ import LoadingSpinner from "./indicators/LoadingSpinner";
 import React from "react";
 
 type Props = Message & {
-  /* 로딩 스피너 표시 여부 */
-  isLoading?: boolean;
-
   /* wrapper 커스텀 클래스 */
   wrapperClassName?: string;
 
