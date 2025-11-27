@@ -43,6 +43,9 @@ type Props = {
 
   /* 컨트롤드 모드 용 onChange */
   onChange?: (value: string) => void;
+
+  /* 외부에서 전달되는 sending 상태(ex. useOptimisticChat의 isPending) */
+  isSending?: boolean;
 }
 
 export default function ChatInput({
@@ -51,17 +54,17 @@ export default function ChatInput({
   placeholder = "메시지를 입력하세요...",
   className = "",
   inputClassName = "",
-  maxHeight = 150,
-  value,
-  onChange,
   micButton,
   recordingButton,
   sendButton,
   sendingButton,
+  maxHeight = 150,
+  value,
+  onChange,
+  isSending = false,
 }: Props) {
   const [innerText, setInnerText] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [isSending, setIsSending] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isControlled = value !== undefined;
@@ -82,7 +85,7 @@ export default function ChatInput({
   }, [text, maxHeight]);
 
   const isEmpty = text.trim().length === 0;
-  const isVoiceMode = !disableVoice && (isEmpty || isRecording);
+  const isVoiceMode = !disableVoice && !isSending && (isEmpty || isRecording);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
@@ -100,19 +103,15 @@ export default function ChatInput({
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    setIsSending(true); // 전송 시작 -> 버튼 비활성화
-
     try {
       // uncontrolled일 때만 값 비우기
       if (!isControlled)
         setInnerText("");
 
-      const result = onSend(trimmed);
-      if (result instanceof Promise) {
-        await result; // 비동기 함수라면 기다림
-      }
-    } finally {
-      setIsSending(false); // 전송 완료 -> 다시 활성화
+      onSend(trimmed);
+
+    } catch (error) {
+      console.error("ChatInput.handleSend.error: ", error);
     }
   }
 
@@ -164,10 +163,23 @@ export default function ChatInput({
 
   // 어떤 버튼을 보여줄지 결정
   const getActivityLayer = () => {
+    // 1) 전송 중: sending
     if (isSending) return "sending";
-    if (isRecording) return "recording";
-    if (isVoiceMode) return "mic";
-    return "send";
+
+    // 2) disableVoice=false -> mic, recording, send
+    if (!disableVoice) {
+      if (isRecording) return "recording";
+      if (isVoiceMode) return "mic";
+      return "send";
+    }
+
+    // 3) disableVoice=true -> 텍스트가 있을 때만 send, 없으면 버튼 없애기
+    if (disableVoice) {
+      if (!isEmpty) return "send";
+      return null;
+    }
+
+    return null;
   }
 
   const activeLayer = getActivityLayer();
