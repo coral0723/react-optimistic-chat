@@ -4,3 +4,4 @@ export { default as SendingDots } from './components/indicators/SendingDots';
 export { default as ChatMessage } from "./components/ChatMessage";
 export { default as ChatList } from "./components/ChatList";
 export { default as ChatInput } from "./components/ChatInput";
+export { default as useOptimisticChat } from "./hooks/useOptimisticChat";
