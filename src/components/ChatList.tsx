@@ -14,6 +14,8 @@ type Props<T> = {
 
   /* wrapper 커스텀 클래스 */
   className?: string;
+
+  loadingRenderer?: React.ReactNode;
 };
 
 export default function ChatList<T>({
@@ -21,6 +23,7 @@ export default function ChatList<T>({
   messageMapper,
   messageRenderer,
   className,
+  loadingRenderer,
 }: Props<T>) {
   /*
   messages가 이미 MappedMessage 구조일 수도 있고 아닐 수도 있기 때문에
@@ -48,9 +51,8 @@ export default function ChatList<T>({
         return (
           <ChatMessage
             key={msg.id}
-            id={msg.id}
-            role={msg.role}
-            content={msg.content}
+            {...msg}
+            loadingRenderer={loadingRenderer}
           />
         );
       })}

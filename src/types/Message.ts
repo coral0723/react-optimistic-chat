@@ -1,5 +1,6 @@
 export type Message = {
-  id: number;
+  id: number | string;
   role: "AI" | "USER";
   content: string;
+  isLoading?: boolean;
 }
