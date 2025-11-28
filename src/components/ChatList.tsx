@@ -48,9 +48,7 @@ export default function ChatList<T>({
         return (
           <ChatMessage
             key={msg.id}
-            id={msg.id}
-            role={msg.role}
-            content={msg.content}
+            {...msg}
           />
         );
       })}
