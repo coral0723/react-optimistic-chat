@@ -9,23 +9,30 @@ type Raw = {
   body: string;
 }
 
-async function getChat(): Promise<Raw[]> {
-  return Promise.resolve([
-    { chatId: "1", sender: "user", body: "안녕하세요!" },
-    { chatId: "2", sender: "ai", body: "무엇을 도와드릴까요?" },
-  ]);
+async function getChat(roomId: string): Promise<Raw[]> {
+  const res = await fetch(`/getChat?roomId=${roomId}`, {
+    method: 'GET',
+    cache: 'no-store',
+  });
+  if (!res.ok)
+    throw new Error("채팅 불러오기 실패");
+
+  const json = await res.json();
+  return json.result;
 }
 
 async function sendAI(content: string): Promise<Raw> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        chatId: crypto.randomUUID(),
-        sender: "ai",
-        body: `AI 응답: ${content}`,
-      });
-    }, 3000);
-  });
+  const res = await fetch(`/sendAI`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json"},
+    body: JSON.stringify({ content })
+  })
+
+  if (!res.ok)
+    throw new Error("AI 응답 실패");
+
+  const json = await res.json();
+  return json.result;
 }
 
 export default function UseOptimisticChatPG() {
@@ -38,7 +45,7 @@ export default function UseOptimisticChatPG() {
     isInitialLoading 
   } = useOptimisticChat<Raw, Raw>({
     queryKey: ["chat", roomId],
-    queryFn: getChat,
+    queryFn: () => getChat(roomId),
     mutationFn: sendAI,
     map: (raw) => ({
       id: raw.chatId,

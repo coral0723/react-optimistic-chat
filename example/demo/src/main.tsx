@@ -1,3 +1,9 @@
+import worker from './mocks/browser.ts';
+
+if (import.meta.env.VITE_API_MOCKING === "enabled") {
+  worker.start();
+}
+
 import { BrowserRouter } from 'react-router-dom'
 import { createRoot } from 'react-dom/client'
 import './index.css'
