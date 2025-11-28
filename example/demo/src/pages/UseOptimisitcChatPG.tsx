@@ -1,6 +1,7 @@
 import ChatInput from "../../../../src/components/ChatInput";
 import ChatList from "../../../../src/components/ChatList";
 import useOptimisticChat from "../../../../src/hooks/useOptimisticChat";
+import SendingDots from "../../../../src/components/indicators/SendingDots";
 
 type Raw = {
   chatId: string;
@@ -56,6 +57,7 @@ export default function UseOptimisticChatPG() {
       {/* 메시지 목록 */}
       <ChatList
         messages={messages}
+        loadingRenderer={<SendingDots/>}
       />
 
       {/* 입력창 */}

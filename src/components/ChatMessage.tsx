@@ -24,6 +24,8 @@ type Props = Message & {
 
   /* 위치 override */
   position?: "auto" | "left" | "right";
+
+  loadingRenderer?: React.ReactNode;
 };
 
 export default function ChatMessage({
@@ -39,6 +41,7 @@ export default function ChatMessage({
   aiBubbleClassName = "",
   userBubbleClassName = "",
   position = "auto",
+  loadingRenderer,
 }: Props) {
   const isAI = role === "AI";
 
@@ -104,7 +107,10 @@ export default function ChatMessage({
           ${bubbleClassName}
         `}
       >
-        {isLoading ? <LoadingSpinner size={"xs"} /> : content}
+        {isLoading 
+          ? loadingRenderer ?? <LoadingSpinner size="xs"/>
+          : content
+        }
       </div>
     </div>
   );
