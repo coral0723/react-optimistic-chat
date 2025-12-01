@@ -4,6 +4,7 @@ import ChatMessagePlayground from "./pages/ChatMessagePlayGround"
 import ChatListPlayGround from "./pages/ChatListPlayGround";
 import ChatInputPlayGround from "./pages/ChatInputPlayGround";
 import UseOptimisticChatPG from "./pages/UseOptimisitcChatPG";
+import ChatContainerPG from "./pages/ChatContainerPG";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
               <LinkButton label="ChatList Playground" to="/chat-list" />
               <LinkButton label="ChatInput Playground" to="/chat-lnput" />
               <LinkButton label="useOptimisticChat Playground" to="/use-optimistic-chat" />
+              <LinkButton label="chatContainer Playground" to="/chat-container" />
             </div>
           }
         />
@@ -26,6 +28,7 @@ export default function App() {
         <Route path="/chat-list" element={<ChatListPlayGround/>} />
         <Route path="/chat-lnput" element={<ChatInputPlayGround/>} />
         <Route path="/use-optimistic-chat" element={<UseOptimisticChatPG/>} />
+        <Route path="/chat-container" element={<ChatContainerPG/>} />
       </Routes>
     </div>
   );
