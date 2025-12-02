@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { Message } from "../types/Message";
 import ChatInput from "./ChatInput";
 import ChatList from "./ChatList";
@@ -34,6 +35,14 @@ export default function ChatContainer<T>({
   inputClassName,
   className,
 }: Props<T>) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
+  
   return (
     <>
       {/* 커스텀 스크롤바 스타일 */}
@@ -57,7 +66,9 @@ export default function ChatContainer<T>({
           flex flex-col ${className || ""}
         `}  
       >
-        <div className={`flex-1 overflow-y-auto chatContainer-scroll p-2`}>
+        <div 
+          ref={scrollRef}
+          className={`flex-1 overflow-y-auto chatContainer-scroll p-2`}>
           <ChatList
             messages={messages}
             {...(messageMapper && { messageMapper })}
