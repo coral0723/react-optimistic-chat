@@ -35,25 +35,48 @@ export default function ChatContainer<T>({
   className,
 }: Props<T>) {
   return (
-    <div
-      className={`
-        w-full flex flex-col ${className}
-      `}  
-    >
-      <ChatList
-        messages={messages}
-        {...(messageMapper && { messageMapper })}
-        {...(messageRenderer && { messageRenderer })}
-        {... (loadingRenderer && { loadingRenderer })}
-        {...(listClassName && { className: listClassName })}
-      />
-      <ChatInput
-        onSend={onSend}
-        {...(isSending && { isSending })}
-        {...(disableVoice && { disableVoice })}
-        {...(placeholder && { placeholder })}
-        {...(inputClassName && { className: inputClassName })}
-      />
-    </div>
+    <>
+      {/* 커스텀 스크롤바 스타일 */}
+      <style>{`
+        .chatContainer-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .chatContainer-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .chatContainer-scroll::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 10px;
+        }
+        .chatContainer-scroll::-webkit-scrollbar-button {
+          display: none; 
+        }
+      `}</style>
+      <div
+        className={`
+          flex flex-col ${className || ""}
+        `}  
+      >
+        <div className={`flex-1 overflow-y-auto chatContainer-scroll p-2`}>
+          <ChatList
+            messages={messages}
+            {...(messageMapper && { messageMapper })}
+            {...(messageRenderer && { messageRenderer })}
+            {... (loadingRenderer && { loadingRenderer })}
+            {...(listClassName && { className: listClassName })}
+          />
+        </div>
+
+        <div className="flex-shrink-0">
+          <ChatInput
+            onSend={onSend}
+            {...(isSending && { isSending })}
+            {...(disableVoice && { disableVoice })}
+            {...(placeholder && { placeholder })}
+            {...(inputClassName && { className: inputClassName })}
+          />
+        </div>
+      </div>
+    </>
   )
 }
