@@ -23,7 +23,77 @@ export const handlers = [
             chatId: "2", 
             sender: "ai", 
             body: `${roomId}: 무엇을 도와드릴까요?`
-          }
+          },
+          {
+            chatId: "3", 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: "4", 
+            sender: "ai", 
+            body: `${roomId}: 무엇을 도와드릴까요?`
+          },
+          {
+            chatId: "5", 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: "6", 
+            sender: "ai", 
+            body: `${roomId}: 무엇을 도와드릴까요?`
+          },
+          {
+            chatId: "7", 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: "8", 
+            sender: "ai", 
+            body: `${roomId}: 무엇을 도와드릴까요?`
+          },
+          {
+            chatId: "9", 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: "10", 
+            sender: "ai", 
+            body: `${roomId}: 무엇을 도와드릴까요?`
+          },
+          {
+            chatId: "11", 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: "12", 
+            sender: "ai", 
+            body: `${roomId}: 무엇을 도와드릴까요?`
+          },
+          {
+            chatId: "13", 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: "14", 
+            sender: "ai", 
+            body: `${roomId}: 무엇을 도와드릴까요?`
+          },
+          {
+            chatId: "15", 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: "16", 
+            sender: "ai", 
+            body: `${roomId}: 무엇을 도와드릴까요?`
+          },
         ],
       })
     );

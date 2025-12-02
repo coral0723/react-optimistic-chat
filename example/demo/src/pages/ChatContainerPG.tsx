@@ -75,7 +75,7 @@ export default function ChatContainerPG() {
     )
 
   return (
-    <div className="max-w-3xl mx-auto flex flex-col gap-4">
+    <div className="max-w-2xl mx-auto flex flex-col max-h-screen">
 
       <label className="flex items-center gap-2 justify-center">
         <input
@@ -91,6 +91,7 @@ export default function ChatContainerPG() {
       )}
 
       <ChatContainer
+        className="h-[80vh]"      
         messages={messages}
         loadingRenderer={<SendingDots/>}
         messageRenderer={(msg) => (
