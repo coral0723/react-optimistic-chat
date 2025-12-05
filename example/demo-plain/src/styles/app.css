@@ -1,0 +1,19 @@
+.app-wrapper {
+  padding: 40px;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link-list {
+  max-width: 320px;
+}

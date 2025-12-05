@@ -1,0 +1,28 @@
+.chatinput-page-container {
+  max-width: 64rem;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.chatinput-output-box {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #6b7280;
+  white-space: pre-wrap;
+}
+
+.chatinput-section {
+  margin-bottom: 0.5rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chatinput-title {
+  align-self: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}

@@ -1,0 +1,132 @@
+.playground-container {
+  display: flex;
+  height: 100vh;
+}
+
+.preview-area {
+  background: #e5e7eb;
+  max-width: 900px;
+  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.preview-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.control-area {
+  width: 400px;
+  border-left: 1px solid #ddd;
+  padding: 24px;
+  overflow-y: auto;
+  background: white;
+}
+
+.control-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.control-block {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.control-label {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.control-select {
+  border: 1px solid #ccc;
+  padding: 8px;
+  width: 100%;
+}
+
+/* bubble colors */
+.bubble-purple {
+  background: #e9d5ff;
+  border: 1px solid #d8b4fe;
+}
+
+.bubble-blue {
+  background: #bfdbfe;
+  border: 1px solid #93c5fd;
+}
+
+.bubble-green {
+  background: #bbf7d0;
+  border: 1px solid #86efac;
+}
+
+.bubble-yellow {
+  background: #fef9c3;
+  border: 1px solid #fde047;
+}
+
+/* common bubble modifiers */
+.bubble-shadow {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+.bubble-border {
+  border: 4px solid #ccc;
+}
+
+.text-sm-custom {
+  font-size: 0.875rem;
+}
+
+.text-base-custom {
+  font-size: 1rem;
+}
+
+/* wrapper background options */
+.wrapper-red {
+  background: #fef2f2;
+}
+
+.wrapper-gray {
+  background: #f9fafb;
+}
+
+.wrapper-padding {
+  padding: 8px;
+}
+
+/* icon wrapper background */
+.icon-purple {
+  background: #e9d5ff;
+  border: 1px solid #a855f7;
+}
+
+.icon-blue {
+  background: #bfdbfe;
+  border: 1px solid #3b82f6;
+}
+
+.icon-green {
+  background: #bbf7d0;
+  border: 1px solid #22c55e;
+}
+
+/* icon colors */
+.text-purple-custom {
+  color: #a855f7;
+}
+
+.text-blue-custom {
+  color: #3b82f6;
+}
+
+.text-green-custom {
+  color: #22c55e;
+}
+
+.text-red-custom {
+  color: #ef4444;
+}

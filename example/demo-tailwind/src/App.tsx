@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import LinkButton from "./components/LinkButton";
-import ChatMessagePlayground from "./pages/ChatMessagePlayGround"
+import ChatMessagePlayGround from "./pages/ChatMessagePlayGround"
 import ChatListPlayGround from "./pages/ChatListPlayGround";
 import ChatInputPlayGround from "./pages/ChatInputPlayGround";
 import UseOptimisticChatPG from "./pages/UseOptimisitcChatPG";
@@ -24,7 +24,7 @@ export default function App() {
             </div>
           }
         />
-        <Route path="/chat-message" element={<ChatMessagePlayground />} />
+        <Route path="/chat-message" element={<ChatMessagePlayGround />} />
         <Route path="/chat-list" element={<ChatListPlayGround/>} />
         <Route path="/chat-lnput" element={<ChatInputPlayGround/>} />
         <Route path="/use-optimistic-chat" element={<UseOptimisticChatPG/>} />
