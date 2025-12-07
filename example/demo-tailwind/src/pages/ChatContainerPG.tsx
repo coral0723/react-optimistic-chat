@@ -22,11 +22,11 @@ async function getChat(roomId: string): Promise<Raw[]> {
   return json.result;
 }
 
-async function sendAI(content: string): Promise<Raw> {
+async function sendAI(content: string, forceError: boolean): Promise<Raw> {
   const res = await fetch(`/sendAI`, {
     method: "POST",
     headers: { "Content-Type": "application/json"},
-    body: JSON.stringify({ content })
+    body: JSON.stringify({ content, forceError })
   })
 
   if (!res.ok)
@@ -50,9 +50,7 @@ export default function ChatContainerPG() {
     queryKey: ["chat", roomId],
     queryFn: () => getChat(roomId),
     mutationFn: async (content) => {
-      if (forceError) 
-        throw new Error("강제 에러 발생 테스트");
-      return sendAI(content);
+      return sendAI(content, forceError);
     },
     map: (raw) => ({
       id: raw.chatId,

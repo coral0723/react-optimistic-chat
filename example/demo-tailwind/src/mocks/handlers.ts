@@ -99,9 +99,22 @@ export const handlers = [
     );
   }),
   http.post(`/sendAI`, async ({ request }) => {
-    const { content } = await request.json() as { content: string };
+    const { content, forceError } = await request.json() as { 
+      content: string;
+      forceError: boolean;
+    };
+
     await delay(3000);
 
+    if (forceError) {
+      return new HttpResponse(
+        JSON.stringify({
+          code: "Error",
+          message: "강제 에러 발생 테스트",
+        }),
+        {status: 500}
+      );
+    }
     return new HttpResponse(
       JSON.stringify({
         code: "Success",

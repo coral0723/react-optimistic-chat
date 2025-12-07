@@ -105,7 +105,17 @@ export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({
     },
     onError: (error) => {
       setIsPending(false);
-      // placeholder 롤백은 추후 추가 예정
+      queryClient.setQueryData<Message[]>(queryKey, (old) => {
+        if (!old || old.length < 2)
+          return old;
+
+        const next = [...old];
+
+        // 마지막 2개 (user 메시지 + AI placeholder) 제거
+        next.splice(-2, 2);
+
+        return next;
+      });
       onError?.(error);
     }
   });
