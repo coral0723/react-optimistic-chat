@@ -6,7 +6,7 @@ type MessageMapper<TRaw> = (raw: TRaw) => Message;
 
 type Options<TQueryRaw, TMutationRaw> = {
   /* 해당 채팅의 queryKey */
-  queryKey: unknown[];
+  queryKey: readonly unknown[];
 
   /* 기존 채팅 내역을 가져오는 함수 */
   queryFn: () => Promise<TQueryRaw[]>;
@@ -36,7 +36,6 @@ export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({
   const [isPending, setIsPending] = useState<boolean>(false); // AI 응답 대기 상태
   const queryClient = useQueryClient();
 
-  // 1) 초기 메시지 로딩
   // 내부적으로 queryFn(raw[]) -> Message[]로 변환해서 캐시에 저장
   const { 
     data: messages = [], 
@@ -51,33 +50,46 @@ export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({
     gcTime,
   });
 
-  // 4) mutation (AI 요청 + optimistic update)
-  const mutation = useMutation<TMutationRaw, unknown, string>({
+  const mutation = useMutation<
+    TMutationRaw, 
+    unknown, 
+    string, 
+    { prev?: Message[] | undefined }
+  >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
-    onMutate: (content) => {
+    onMutate: async (content) => {
       setIsPending(true);
+
+      const prev = queryClient.getQueryData<Message[]>(queryKey);
+      
+      // 조건부 cancleQueries
+      if (prev) {
+        await queryClient.cancelQueries({ queryKey });
+      }
 
       queryClient.setQueryData<Message[]>(queryKey, (old) => {
         const base = old ?? [];
-        const next = [...base]; 
 
-        // user 메시지 추가
-        next.push({
-          id: crypto.randomUUID(),
-          role: "USER",
-          content,
-        })
-
-        // AI placeholder 추가
-        next.push({
-          id: crypto.randomUUID(),
-          role: "AI",
-          content: "",
-          isLoading: true,
-        });
-
-        return next;
+        return [
+          ...base,
+          // user 메시지 추가
+          {
+            id: crypto.randomUUID(),
+            role: "USER",
+            content,
+          },
+          // AI placeholder 추가
+          {
+            id: crypto.randomUUID(),
+            role: "AI",
+            content: "",
+            isLoading: true,
+          }
+        ]; 
       });
+
+      // rollback context 반환
+      return { prev };
     },
     onSuccess: (rawAiResponse) => { 
       // 서버의 응답을 Message로 변환
@@ -103,24 +115,23 @@ export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({
 
       setIsPending(false);
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
       setIsPending(false);
-      queryClient.setQueryData<Message[]>(queryKey, (old) => {
-        if (!old || old.length < 2)
-          return old;
+      
+      // context 기반 rollback
+      if (context?.prev) {
+        queryClient.setQueryData(queryKey, context.prev);
+      }
 
-        const next = [...old];
-
-        // 마지막 2개 (user 메시지 + AI placeholder) 제거
-        next.splice(-2, 2);
-
-        return next;
-      });
       onError?.(error);
-    }
+    },
+    // mutation 이후 서버 기준 최신 데이터 재동기화
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
   });
 
-  // 5) 유저 메시지 전송
+  // 유저 메시지 전송
   const sendUserMessage = (content: string) => {
     if (!content.trim()) return;
     mutation.mutate(content);

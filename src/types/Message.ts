@@ -1,6 +1,8 @@
+export type ChatRole = "AI" | "USER";
+
 export type Message = {
   id: number | string;
-  role: "AI" | "USER";
+  role: ChatRole;
   content: string;
   isLoading?: boolean;
 }
