@@ -6,7 +6,7 @@ type MessageMapper<TRaw> = (raw: TRaw) => Message;
 
 type Options<TQueryRaw, TMutationRaw> = {
   /* 해당 채팅의 queryKey */
-  queryKey: unknown[];
+  queryKey: readonly unknown[];
 
   /* 기존 채팅 내역을 가져오는 함수 */
   queryFn: () => Promise<TQueryRaw[]>;
