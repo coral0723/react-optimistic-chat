@@ -16,7 +16,9 @@
     "build:lib": "tsup",
     "build": "npm run build:css && npm run copy:css && npm run build:lib"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "keywords": [],
   "author": "",
   "license": "MTI",

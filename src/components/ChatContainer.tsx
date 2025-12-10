@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Message } from "../types/Message";
 import ChatInput from "./ChatInput";
 import ChatList from "./ChatList";
@@ -13,7 +13,7 @@ type Props<T> = {
 
   /* ChatInput */
   onSend: (value: string) => void | Promise<void>;
-  isSending?: boolean;
+  isSending: boolean;
   disableVoice?: boolean;
   placeholder?: string;
   inputClassName?: string;
@@ -35,32 +35,53 @@ export default function ChatContainer<T>({
   inputClassName,
   className,
 }: Props<T>) {
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 스크롤 위치 감지
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+
     el.scrollTop = el.scrollHeight;
-  }, [messages]);
+    const handleScroll = () => {
+      const isBottom =
+        el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+      setIsAtBottom(isBottom);
+    };
+
+    el.addEventListener("scroll", handleScroll);
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => { 
+    const el = scrollRef.current; 
+    if (!el) return; 
+    if (isAtBottom) { 
+      el.scrollTop = el.scrollHeight; 
+  } }, [messages, isAtBottom]);
+
+  // 스크롤 하단 이동 함수
+  const scrollToBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    setIsAtBottom(true);
+  };
+
+  // 사용자 메시지 전송 시 스크롤 하단으로 이동
+  const handleSend = async (value: string) => {
+    setIsAtBottom(true);
+
+    requestAnimationFrame(() => {
+      scrollToBottom();
+    });
+
+    await onSend(value);
+  };
   
   return (
     <>
-      {/* 커스텀 스크롤바 스타일 */}
-      <style>{`
-        .chatContainer-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-        .chatContainer-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .chatContainer-scroll::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
-          border-radius: 10px;
-        }
-        .chatContainer-scroll::-webkit-scrollbar-button {
-          display: none; 
-        }
-      `}</style>
       <div
         className={`
           flex flex-col ${className || ""}
@@ -78,10 +99,36 @@ export default function ChatContainer<T>({
           />
         </div>
 
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 relative">
+          {!isAtBottom && (
+            <button
+              onClick={scrollToBottom}
+              className="
+                absolute bottom-20 left-1/2 -translate-x-1/2
+                w-10 h-10 rounded-full bg-white font-bold
+                flex items-center justify-center
+                border-gray-200 border-[1px]
+              "
+              aria-label="scroll to bottom"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M12 5v14"/>
+                <path d="m19 12-7 7-7-7"/>
+              </svg>
+            </button>
+          )}
           <ChatInput
-            onSend={onSend}
-            {...(isSending && { isSending })}
+            onSend={handleSend}
+            isSending={isSending}
             {...(disableVoice && { disableVoice })}
             {...(placeholder && { placeholder })}
             {...(inputClassName && { className: inputClassName })}

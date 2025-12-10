@@ -45,7 +45,7 @@ type Props = {
   onChange?: (value: string) => void;
 
   /* 외부에서 전달되는 sending 상태(ex. useOptimisticChat의 isPending) */
-  isSending?: boolean;
+  isSending: boolean;
 }
 
 export default function ChatInput({
@@ -61,7 +61,7 @@ export default function ChatInput({
   maxHeight = 150,
   value,
   onChange,
-  isSending = false,
+  isSending,
 }: Props) {
   const [innerText, setInnerText] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
