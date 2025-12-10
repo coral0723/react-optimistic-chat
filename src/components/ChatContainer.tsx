@@ -45,22 +45,6 @@ export default function ChatContainer<T>({
   
   return (
     <>
-      {/* 커스텀 스크롤바 스타일 */}
-      <style>{`
-        .chatContainer-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-        .chatContainer-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .chatContainer-scroll::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
-          border-radius: 10px;
-        }
-        .chatContainer-scroll::-webkit-scrollbar-button {
-          display: none; 
-        }
-      `}</style>
       <div
         className={`
           flex flex-col ${className || ""}
