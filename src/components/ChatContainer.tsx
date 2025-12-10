@@ -13,7 +13,7 @@ type Props<T> = {
 
   /* ChatInput */
   onSend: (value: string) => void | Promise<void>;
-  isSending?: boolean;
+  isSending: boolean;
   disableVoice?: boolean;
   placeholder?: string;
   inputClassName?: string;
@@ -65,7 +65,7 @@ export default function ChatContainer<T>({
         <div className="flex-shrink-0">
           <ChatInput
             onSend={onSend}
-            {...(isSending && { isSending })}
+            isSending={isSending}
             {...(disableVoice && { disableVoice })}
             {...(placeholder && { placeholder })}
             {...(inputClassName && { className: inputClassName })}
