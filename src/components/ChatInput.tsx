@@ -46,6 +46,12 @@ type Props = {
 
   /* 외부에서 전달되는 sending 상태(ex. useOptimisticChat의 isPending) */
   isSending: boolean;
+
+  /* Enter로 전송할지 여부 */
+  submitOnEnter?: boolean;
+
+  /* 음성 인식 언어 설정 */
+  speechLang?: string;
 }
 
 export default function ChatInput({
@@ -62,6 +68,8 @@ export default function ChatInput({
   value,
   onChange,
   isSending,
+  submitOnEnter = false,
+  speechLang = "ko-KR",
 }: Props) {
   const [innerText, setInnerText] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -69,7 +77,30 @@ export default function ChatInput({
 
   const isControlled = value !== undefined;
   const text = isControlled ? value! : innerText;
+  const isEmpty = text.trim().length === 0;
   const recognition = useRef<ISpeechRecognition | null>(null);
+  const isVoiceMode = !disableVoice && !isSending && (isEmpty || isRecording);
+
+  // cleanup
+  useEffect(() => {
+    return () => {
+      const r = recognition.current;
+
+      if (r) {
+        r.onresult = null;
+        r.onstart = null;
+        r.onend = null;
+
+        try {
+          r.stop();
+        } catch (e) {
+          console.warn("SpeechRecognition stop error:", e);
+        }
+      }
+
+      recognition.current = null;
+    };
+  }, []);
 
   // 높이 자동 조절 + 최대 높이 설정
   useEffect(() => {
@@ -83,9 +114,6 @@ export default function ChatInput({
     // 150px 이상이면 내부 스크롤 가능하도록
     el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
   }, [text, maxHeight]);
-
-  const isEmpty = text.trim().length === 0;
-  const isVoiceMode = !disableVoice && !isSending && (isEmpty || isRecording);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
@@ -108,10 +136,21 @@ export default function ChatInput({
       if (!isControlled)
         setInnerText("");
 
-      onSend(trimmed);
+      await onSend(trimmed);
 
     } catch (error) {
       console.error("ChatInput.handleSend.error: ", error);
+    }
+  }
+
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!submitOnEnter) return;
+
+    if (e.key === "Enter" && e.shiftKey) return;
+
+    if (e.key === "Enter") {
+      e.preventDefault(); // textarea 줄바꿈 방지
+      await handleSend();
     }
   }
 
@@ -129,7 +168,7 @@ export default function ChatInput({
         }
 
         recognition.current = new Speech();
-        recognition.current.lang = "ko-KR";
+        recognition.current.lang = speechLang;
         recognition.current.continuous = true; // 끊기지 않고 연속해서 듣게 하는 설정
         recognition.current.interimResults = true; // 중간에 나오는 임시 텍스트도 받는 설정
 
@@ -185,142 +224,124 @@ export default function ChatInput({
   const activeLayer = getActivityLayer();
 
   return (
-    <>
-      {/* 커스텀 스크롤바 스타일 */}
-      <style>{`
-        .chatinput-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-        .chatinput-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .chatinput-scroll::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
-          border-radius: 10px;
-        }
-        .chatinput-scroll::-webkit-scrollbar-button {
-          display: none; 
-        }
-      `}</style>
-
-      <div 
+    <div 
+      className={`
+        flex border border-gray-300 p-2 rounded-3xl
+        ${className}
+      `}>
+      <textarea
+        ref={textareaRef}
+        value={text}
+        onChange={handleChange}
+        placeholder={placeholder}
+        rows={1}
+        onKeyDown={handleKeyDown}
         className={`
-          flex border border-gray-300 p-2 rounded-3xl
-          ${className}
-        `}>
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={handleChange}
-          placeholder={placeholder}
-          rows={1}
+          w-full px-3 py-2
+          resize-none border-none
+          text-sm focus:outline-none
+          overflow-hidden chatinput-scroll
+          ${inputClassName}
+        `}
+      />
+      <button
+        type="button" // submit 방지
+        disabled={isSending}
+        onClick={
+          activeLayer === "mic" || activeLayer === "recording"
+            ? handleRecord
+            : handleSend
+        }
+        className="relative w-10 h-10 ml-2 mt-auto flex-shrink-0"
+      >
+        {/* mic layer */}
+        <div
           className={`
-            w-full px-3 py-2
-            resize-none border-none
-            text-sm focus:outline-none
-            overflow-hidden chatinput-scroll
-            ${inputClassName}
+            absolute inset-0 flex items-center justify-center rounded-3xl
+            transition-opacity duration-150
+            ${activeLayer === "mic" ? "opacity-100" : "opacity-0"}
+            bg-gray-100 text-gray-700
+            ${micButton?.className || ""}
           `}
-        />
-        <button
-          type="button" // submit 방지
-          disabled={isSending}
-          onClick={
-            activeLayer === "mic" || activeLayer === "recording"
-              ? handleRecord
-              : handleSend
-          }
-          className="relative w-10 h-10 ml-2 mt-auto flex-shrink-0"
         >
-          {/* mic layer */}
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center rounded-3xl
-              transition-opacity duration-150
-              ${activeLayer === "mic" ? "opacity-100" : "opacity-0"}
-              bg-gray-100 text-gray-700
-              ${micButton?.className || ""}
-            `}
-          >
-            {micButton?.icon || (
-              <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
-                <path d="M12 19v3" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <rect x="9" y="2" width="6" height="13" rx="3" />
-              </svg>
-            )}
-          </div>
+          {micButton?.icon || (
+            <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
+              <path d="M12 19v3" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <rect x="9" y="2" width="6" height="13" rx="3" />
+            </svg>
+          )}
+        </div>
 
-          {/* recording layer */}
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center rounded-3xl
-              transition-opacity duration-150
-              ${activeLayer === "recording" ? "opacity-100" : "opacity-0"}
-              bg-red-600 text-white
-              ${recordingButton?.className || ""}
-            `}
-          >
-            {recordingButton?.icon || (
-              <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
-                <path d="M12 19v3" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <rect x="9" y="2" width="6" height="13" rx="3" />
-              </svg>
-            )}
-          </div>
+        {/* recording layer */}
+        <div
+          className={`
+            absolute inset-0 flex items-center justify-center rounded-3xl
+            transition-opacity duration-150
+            ${activeLayer === "recording" ? "opacity-100" : "opacity-0"}
+            bg-red-600 text-white
+            ${recordingButton?.className || ""}
+          `}
+        >
+          {recordingButton?.icon || (
+            <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
+              <path d="M12 19v3" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <rect x="9" y="2" width="6" height="13" rx="3" />
+            </svg>
+          )}
+        </div>
 
-          {/* send layer */}
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center rounded-3xl
-              transition-opacity duration-150
-              ${activeLayer === "send" ? "opacity-100" : "opacity-0"}
-              bg-black text-white
-              ${sendButton?.className || ""}
-            `}
-          >
-            {sendButton?.icon || (
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 22 24" 
-                fill="none" 
-                stroke="currentColor" 
-                stroke-width="2" 
-              >
-                <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
-                <path d="M6 12h16"/>
-              </svg>
-            )}
-          </div>
+        {/* send layer */}
+        <div
+          className={`
+            absolute inset-0 flex items-center justify-center rounded-3xl
+            transition-opacity duration-150
+            ${activeLayer === "send" ? "opacity-100" : "opacity-0"}
+            bg-black text-white
+            ${sendButton?.className || ""}
+          `}
+        >
+          {sendButton?.icon || (
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 22 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2" 
+            >
+              <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
+              <path d="M6 12h16"/>
+            </svg>
+          )}
+        </div>
 
-          {/* sending layer */}
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center rounded-3xl
-              transition-opacity duration-150
-              ${activeLayer === "sending" ? "opacity-100" : "opacity-0"}
-              bg-gray-400 text-white
-              ${sendingButton?.className || ""}
-            `}
-          >
-            {sendingButton?.icon || (
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 22 24" 
-                fill="none" 
-                stroke="currentColor" 
-                stroke-width="2" 
-              >
-                <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
-                <path d="M6 12h16"/>
-              </svg>
-            )}
-          </div>
-        </button>
-      </div>
-    </>
+        {/* sending layer */}
+        <div
+          className={`
+            absolute inset-0 flex items-center justify-center rounded-3xl
+            transition-opacity duration-150
+            ${activeLayer === "sending" ? "opacity-100" : "opacity-0"}
+            bg-gray-400 text-white
+            ${sendingButton?.className || ""}
+          `}
+        >
+          {sendingButton?.icon || (
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 22 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2" 
+            >
+              <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
+              <path d="M6 12h16"/>
+            </svg>
+          )}
+        </div>
+      </button>
+    </div>
   );
 }
