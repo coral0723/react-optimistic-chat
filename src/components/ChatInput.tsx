@@ -71,6 +71,27 @@ export default function ChatInput({
   const text = isControlled ? value! : innerText;
   const recognition = useRef<ISpeechRecognition | null>(null);
 
+  // cleanup
+  useEffect(() => {
+    return () => {
+      const r = recognition.current;
+
+      if (r) {
+        r.onresult = null;
+        r.onstart = null;
+        r.onend = null;
+
+        try {
+          r.stop();
+        } catch (e) {
+          console.warn("SpeechRecognition stop error:", e);
+        }
+      }
+
+      recognition.current = null;
+    };
+  }, []);
+
   // 높이 자동 조절 + 최대 높이 설정
   useEffect(() => {
     const el = textareaRef.current;
