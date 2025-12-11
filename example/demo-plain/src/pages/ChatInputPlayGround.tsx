@@ -22,6 +22,16 @@ export default function ChatInputPlayGround() {
       </div>
 
       <div className="chatinput-section">
+        <span className="chatinput-title">{"<submitOnEnter>"}</span>
+        <ChatInput
+          onSend={(t: string) => {
+            setText(t);
+          }}
+          submitOnEnter={true}
+        />
+      </div>
+
+      <div className="chatinput-section">
         <span className="chatinput-title">{"<disableVoice>"}</span>
         <ChatInput
           onSend={(t: string) => {

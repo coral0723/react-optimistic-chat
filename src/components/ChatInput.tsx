@@ -46,6 +46,9 @@ type Props = {
 
   /* 외부에서 전달되는 sending 상태(ex. useOptimisticChat의 isPending) */
   isSending: boolean;
+
+  /* Enter로 전송할지 여부 */
+  submitOnEnter?: boolean;
 }
 
 export default function ChatInput({
@@ -62,6 +65,7 @@ export default function ChatInput({
   value,
   onChange,
   isSending,
+  submitOnEnter = false,
 }: Props) {
   const [innerText, setInnerText] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -69,7 +73,9 @@ export default function ChatInput({
 
   const isControlled = value !== undefined;
   const text = isControlled ? value! : innerText;
+  const isEmpty = text.trim().length === 0;
   const recognition = useRef<ISpeechRecognition | null>(null);
+  const isVoiceMode = !disableVoice && !isSending && (isEmpty || isRecording);
 
   // cleanup
   useEffect(() => {
@@ -105,9 +111,6 @@ export default function ChatInput({
     el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
   }, [text, maxHeight]);
 
-  const isEmpty = text.trim().length === 0;
-  const isVoiceMode = !disableVoice && !isSending && (isEmpty || isRecording);
-
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
     if (!isControlled) {
@@ -133,6 +136,17 @@ export default function ChatInput({
 
     } catch (error) {
       console.error("ChatInput.handleSend.error: ", error);
+    }
+  }
+
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!submitOnEnter) return;
+
+    if (e.key === "Enter" && e.shiftKey) return;
+
+    if (e.key === "Enter") {
+      e.preventDefault(); // textarea 줄바꿈 방지
+      await handleSend();
     }
   }
 
@@ -217,6 +231,7 @@ export default function ChatInput({
         onChange={handleChange}
         placeholder={placeholder}
         rows={1}
+        onKeyDown={handleKeyDown}
         className={`
           w-full px-3 py-2
           resize-none border-none

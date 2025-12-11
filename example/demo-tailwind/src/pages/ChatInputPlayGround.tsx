@@ -22,6 +22,17 @@ export default function ChatInputPlayGround() {
       </div>
       <div className="mb-2 w-full flex flex-col">
         <span className="self-center text-xl font-bold mb-1">
+          {"<submitOnEnter>"}
+        </span>
+        <ChatInput
+          onSend={(t: string) => {
+            setText(t);
+          }}
+          submitOnEnter={true}
+        />
+      </div>
+      <div className="mb-2 w-full flex flex-col">
+        <span className="self-center text-xl font-bold mb-1">
           {"<disableVoice>"}
         </span>
         <ChatInput
