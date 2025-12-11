@@ -49,6 +49,9 @@ type Props = {
 
   /* Enter로 전송할지 여부 */
   submitOnEnter?: boolean;
+
+  /* 음성 인식 언어 설정 */
+  speechLang?: string;
 }
 
 export default function ChatInput({
@@ -66,6 +69,7 @@ export default function ChatInput({
   onChange,
   isSending,
   submitOnEnter = false,
+  speechLang = "ko-KR",
 }: Props) {
   const [innerText, setInnerText] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -164,7 +168,7 @@ export default function ChatInput({
         }
 
         recognition.current = new Speech();
-        recognition.current.lang = "ko-KR";
+        recognition.current.lang = speechLang;
         recognition.current.continuous = true; // 끊기지 않고 연속해서 듣게 하는 설정
         recognition.current.interimResults = true; // 중간에 나오는 임시 텍스트도 받는 설정
 
