@@ -108,7 +108,7 @@ export default function ChatInput({
       if (!isControlled)
         setInnerText("");
 
-      onSend(trimmed);
+      await onSend(trimmed);
 
     } catch (error) {
       console.error("ChatInput.handleSend.error: ", error);
