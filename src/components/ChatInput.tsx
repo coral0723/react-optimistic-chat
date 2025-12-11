@@ -185,142 +185,123 @@ export default function ChatInput({
   const activeLayer = getActivityLayer();
 
   return (
-    <>
-      {/* 커스텀 스크롤바 스타일 */}
-      <style>{`
-        .chatinput-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-        .chatinput-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .chatinput-scroll::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
-          border-radius: 10px;
-        }
-        .chatinput-scroll::-webkit-scrollbar-button {
-          display: none; 
-        }
-      `}</style>
-
-      <div 
+    <div 
+      className={`
+        flex border border-gray-300 p-2 rounded-3xl
+        ${className}
+      `}>
+      <textarea
+        ref={textareaRef}
+        value={text}
+        onChange={handleChange}
+        placeholder={placeholder}
+        rows={1}
         className={`
-          flex border border-gray-300 p-2 rounded-3xl
-          ${className}
-        `}>
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={handleChange}
-          placeholder={placeholder}
-          rows={1}
+          w-full px-3 py-2
+          resize-none border-none
+          text-sm focus:outline-none
+          overflow-hidden chatinput-scroll
+          ${inputClassName}
+        `}
+      />
+      <button
+        type="button" // submit 방지
+        disabled={isSending}
+        onClick={
+          activeLayer === "mic" || activeLayer === "recording"
+            ? handleRecord
+            : handleSend
+        }
+        className="relative w-10 h-10 ml-2 mt-auto flex-shrink-0"
+      >
+        {/* mic layer */}
+        <div
           className={`
-            w-full px-3 py-2
-            resize-none border-none
-            text-sm focus:outline-none
-            overflow-hidden chatinput-scroll
-            ${inputClassName}
+            absolute inset-0 flex items-center justify-center rounded-3xl
+            transition-opacity duration-150
+            ${activeLayer === "mic" ? "opacity-100" : "opacity-0"}
+            bg-gray-100 text-gray-700
+            ${micButton?.className || ""}
           `}
-        />
-        <button
-          type="button" // submit 방지
-          disabled={isSending}
-          onClick={
-            activeLayer === "mic" || activeLayer === "recording"
-              ? handleRecord
-              : handleSend
-          }
-          className="relative w-10 h-10 ml-2 mt-auto flex-shrink-0"
         >
-          {/* mic layer */}
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center rounded-3xl
-              transition-opacity duration-150
-              ${activeLayer === "mic" ? "opacity-100" : "opacity-0"}
-              bg-gray-100 text-gray-700
-              ${micButton?.className || ""}
-            `}
-          >
-            {micButton?.icon || (
-              <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
-                <path d="M12 19v3" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <rect x="9" y="2" width="6" height="13" rx="3" />
-              </svg>
-            )}
-          </div>
+          {micButton?.icon || (
+            <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
+              <path d="M12 19v3" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <rect x="9" y="2" width="6" height="13" rx="3" />
+            </svg>
+          )}
+        </div>
 
-          {/* recording layer */}
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center rounded-3xl
-              transition-opacity duration-150
-              ${activeLayer === "recording" ? "opacity-100" : "opacity-0"}
-              bg-red-600 text-white
-              ${recordingButton?.className || ""}
-            `}
-          >
-            {recordingButton?.icon || (
-              <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
-                <path d="M12 19v3" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <rect x="9" y="2" width="6" height="13" rx="3" />
-              </svg>
-            )}
-          </div>
+        {/* recording layer */}
+        <div
+          className={`
+            absolute inset-0 flex items-center justify-center rounded-3xl
+            transition-opacity duration-150
+            ${activeLayer === "recording" ? "opacity-100" : "opacity-0"}
+            bg-red-600 text-white
+            ${recordingButton?.className || ""}
+          `}
+        >
+          {recordingButton?.icon || (
+            <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
+              <path d="M12 19v3" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <rect x="9" y="2" width="6" height="13" rx="3" />
+            </svg>
+          )}
+        </div>
 
-          {/* send layer */}
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center rounded-3xl
-              transition-opacity duration-150
-              ${activeLayer === "send" ? "opacity-100" : "opacity-0"}
-              bg-black text-white
-              ${sendButton?.className || ""}
-            `}
-          >
-            {sendButton?.icon || (
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 22 24" 
-                fill="none" 
-                stroke="currentColor" 
-                stroke-width="2" 
-              >
-                <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
-                <path d="M6 12h16"/>
-              </svg>
-            )}
-          </div>
+        {/* send layer */}
+        <div
+          className={`
+            absolute inset-0 flex items-center justify-center rounded-3xl
+            transition-opacity duration-150
+            ${activeLayer === "send" ? "opacity-100" : "opacity-0"}
+            bg-black text-white
+            ${sendButton?.className || ""}
+          `}
+        >
+          {sendButton?.icon || (
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 22 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2" 
+            >
+              <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
+              <path d="M6 12h16"/>
+            </svg>
+          )}
+        </div>
 
-          {/* sending layer */}
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center rounded-3xl
-              transition-opacity duration-150
-              ${activeLayer === "sending" ? "opacity-100" : "opacity-0"}
-              bg-gray-400 text-white
-              ${sendingButton?.className || ""}
-            `}
-          >
-            {sendingButton?.icon || (
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 22 24" 
-                fill="none" 
-                stroke="currentColor" 
-                stroke-width="2" 
-              >
-                <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
-                <path d="M6 12h16"/>
-              </svg>
-            )}
-          </div>
-        </button>
-      </div>
-    </>
+        {/* sending layer */}
+        <div
+          className={`
+            absolute inset-0 flex items-center justify-center rounded-3xl
+            transition-opacity duration-150
+            ${activeLayer === "sending" ? "opacity-100" : "opacity-0"}
+            bg-gray-400 text-white
+            ${sendingButton?.className || ""}
+          `}
+        >
+          {sendingButton?.icon || (
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 22 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2" 
+            >
+              <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/>
+              <path d="M6 12h16"/>
+            </svg>
+          )}
+        </div>
+      </button>
+    </div>
   );
 }
