@@ -4,56 +4,41 @@ type Props = {
   size?: Size;
 };
 
-export default function SendingDots({ size = "md" }: Props) {
-  const sizeMap = {
-    xs: {
-      wrapper: "w-3",
-      dot: "text-[8px]",
-    },
-    sm: {
-      wrapper: "w-4",
-      dot: "text-[10px]",
-    },
-    md: {
-      wrapper: "w-5",
-      dot: "text-[12px]",
-    },
-    lg: {
-      wrapper: "w-6",
-      dot: "text-[14px]",
-    },
-  } as const;
 
-  const { wrapper, dot } = sizeMap[size];
+export default function SendingDots({ size = "md" }: Props) {
+  const sizeMap: Record<Size, { wrapperWidth: number; fontSize: number }> = {
+    xs: { wrapperWidth: 12, fontSize: 8 },
+    sm: { wrapperWidth: 16, fontSize: 10 },
+    md: { wrapperWidth: 20, fontSize: 12 },
+    lg: { wrapperWidth: 24, fontSize: 14 },
+  };
+
+  const { wrapperWidth, fontSize } = sizeMap[size];
 
   return (
-    <>
-      <style>
-        {`
-          @keyframes chatinput-loading-bounce {
-            0%, 100% { opacity: 0.2; transform: translateY(0); }
-            50% { opacity: 1; transform: translateY(-2px); }
-          }
-        `}
-      </style>
-
-      <span className={`inline-flex justify-between ${wrapper}`}>
-        <span
-          className={`${dot} font-extrabold animate-[chatinput-loading-bounce_1.4s_ease-in-out_infinite]`}
-        >
-          .
-        </span>
-        <span
-          className={`${dot} font-extrabold animate-[chatinput-loading-bounce_1.4s_ease-in-out_0.2s_infinite]`}
-        >
-          .
-        </span>
-        <span
-          className={`${dot} font-extrabold animate-[chatinput-loading-bounce_1.4s_ease-in-out_0.4s_infinite]`}
-        >
-          .
-        </span>
+    <span 
+      className="sending-dots"
+      style={{ width: wrapperWidth }}
+      aria-label="sending"
+    >
+      <span
+        className="sending-dot"
+        style={{ fontSize, animationDelay: "0ms" }}
+      >
+        .
       </span>
-    </>
+      <span
+        className="sending-dot"
+        style={{ fontSize, animationDelay: "200ms" }}
+      >
+        .
+      </span>
+      <span
+        className="sending-dot"
+        style={{ fontSize, animationDelay: "400ms" }}
+      >
+        .
+      </span>
+    </span>
   );
 }
