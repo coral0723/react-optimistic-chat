@@ -17,24 +17,24 @@ export default function SendingDots({ size = "md" }: Props) {
 
   return (
     <span 
-      className="sending-dots"
+      className="roc-sending-dots"
       style={{ width: wrapperWidth }}
       aria-label="sending"
     >
       <span
-        className="sending-dot"
+        className="roc-sending-dot"
         style={{ fontSize, animationDelay: "0ms" }}
       >
         .
       </span>
       <span
-        className="sending-dot"
+        className="roc-sending-dot"
         style={{ fontSize, animationDelay: "200ms" }}
       >
         .
       </span>
       <span
-        className="sending-dot"
+        className="roc-sending-dot"
         style={{ fontSize, animationDelay: "400ms" }}
       >
         .

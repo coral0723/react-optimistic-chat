@@ -15,9 +15,9 @@ export default function LoadingSpinner({ size }: Props) {
   const px = sizeMap[size];
 
   return (
-    <div className="spinner-wrapper">
+    <div className="roc-spinner-wrapper">
       <div 
-        className="spinner"
+        className="roc-spinner"
         style={{ 
           width: px,
           height: px,
