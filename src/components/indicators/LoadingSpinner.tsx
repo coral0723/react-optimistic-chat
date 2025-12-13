@@ -4,20 +4,25 @@ type Props = {
   size: Size;
 }
 
-export default function LoadingSpinner({size}: Props) {
-  const sizeClasses: Record<Size, string> = {
-    xs: 'w-6 h-6',
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16'
+export default function LoadingSpinner({ size }: Props) {
+  const sizeMap: Record<Size, number> = {
+    xs: 24,
+    sm: 32,
+    md: 48,
+    lg: 64,
   };
 
+  const px = sizeMap[size];
+
   return (
-    <div className="flex items-center justify-center">
+    <div className="spinner-wrapper">
       <div 
-        className={`${sizeClasses[size]} border-4 border-gray-200 rounded-full animate-spin`}
-        style={{ borderRightColor: 'transparent' }}
+        className="spinner"
+        style={{ 
+          width: px,
+          height: px,
+        }}
       />
     </div>
   );
-};
+}
