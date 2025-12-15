@@ -40,5 +40,8 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
-  }
+  },
+  "sideEffects": [
+    "./dist/style.css"
+  ]
 }
