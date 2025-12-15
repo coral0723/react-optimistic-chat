@@ -34,7 +34,7 @@
     "typescript": "^5.9.3"
   },
   "exports": {
-    "./style.css": "./dist/styles/style.css",
+    "./style.css": "./dist/style.css",
     ".": {
       "import": "./dist/index.mjs",
       "require": "./dist/index.js",
