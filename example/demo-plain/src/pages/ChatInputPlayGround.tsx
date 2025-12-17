@@ -37,7 +37,7 @@ export default function ChatInputPlayGround() {
           onSend={(t: string) => {
             setText(t);
           }}
-          disableVoice={true}
+          voice={false}
         />
       </div>
 

@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import type { SpeechRecognition as ISpeechRecognition } from "../types/Speech";
+import useBrowserSpeechRecognition from "../hooks/useBrowserSpeechRecognition";
 
-declare global {
-  interface Window {
-    SpeechRecognition: new () => ISpeechRecognition;
-    webkitSpeechRecognition: new () => ISpeechRecognition;
-  }
+type VoiceRecognitionController = {
+  start: () => void;
+  stop: () => void;
+  isRecording: boolean;
 }
 
 type ButtonConfig = {
@@ -17,8 +16,8 @@ type Props = {
   /* 전송 버튼 클릭(또는 Enter) 시 호출되는 콜백 */
   onSend: (value: string) => void | Promise<void>;
 
-  /* 음성 모드 비활성화: true면 항상 send 버튼만 표시 */
-  disableVoice?: boolean;
+  /* true: 브라우저 음성 인식, false: 미사용 */
+  voice?: boolean | VoiceRecognitionController;
 
   /* placeholder 텍스트 */
   placeholder?: string;
@@ -48,15 +47,12 @@ type Props = {
   isSending: boolean;
 
   /* Enter로 전송할지 여부 */
-  submitOnEnter?: boolean;
-
-  /* 음성 인식 언어 설정 */
-  speechLang?: string;
+  submitOnEnter?: boolean;  
 }
 
 export default function ChatInput({
   onSend,
-  disableVoice = false,
+  voice = true,
   placeholder = "메시지를 입력하세요...",
   className = "",
   inputClassName = "",
@@ -69,38 +65,35 @@ export default function ChatInput({
   onChange,
   isSending,
   submitOnEnter = false,
-  speechLang = "ko-KR",
 }: Props) {
   const [innerText, setInnerText] = useState<string>("");
-  const [isRecording, setIsRecording] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const isControlled = value !== undefined;
   const text = isControlled ? value! : innerText;
   const isEmpty = text.trim().length === 0;
-  const recognition = useRef<ISpeechRecognition | null>(null);
-  const isVoiceMode = !disableVoice && !isSending && (isEmpty || isRecording);
 
-  // cleanup
-  useEffect(() => {
-    return () => {
-      const r = recognition.current;
-
-      if (r) {
-        r.onresult = null;
-        r.onstart = null;
-        r.onend = null;
-
-        try {
-          r.stop();
-        } catch (e) {
-          console.warn("SpeechRecognition stop error:", e);
-        }
+  const defaultVoice = useBrowserSpeechRecognition({
+    onTranscript: (text) => {
+      if (!isControlled) {
+        setInnerText(text);
       }
+      onChange?.(text);
+    },
+  });
 
-      recognition.current = null;
-    };
-  }, []);
+  const voiceController =
+    voice === true
+      ? defaultVoice
+      : typeof voice === "object"
+        ? voice
+        : null;
+  
+  const isRecording = voiceController?.isRecording ?? false;
+  const isVoiceEnabled = Boolean(voiceController);
+  const isVoiceMode =
+    isVoiceEnabled &&
+    !isSending &&
+    (isEmpty || isRecording);
 
   // 높이 자동 조절 + 최대 높이 설정
   useEffect(() => {
@@ -155,48 +148,12 @@ export default function ChatInput({
   }
 
   const handleRecord = () => {
-    try {
-      if(!isRecording) {
-        /* 브라우저마다 다른 SpeechRecognition 생성자 가져오기
-        Chrome: webkitSpeechRecognition
-        다른 일부 브라우저: SpeechRecognition */
-        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!Speech) {
-          console.error("Browser does not support SpeechRecognition");
-          alert("현재 브라우저에서는 음성 인식 기능을 사용할 수 없습니다.");
-          return;
-        }
+    if (!voiceController) return;
 
-        recognition.current = new Speech();
-        recognition.current.lang = speechLang;
-        recognition.current.continuous = true; // 끊기지 않고 연속해서 듣게 하는 설정
-        recognition.current.interimResults = true; // 중간에 나오는 임시 텍스트도 받는 설정
-
-        recognition.current.onstart = () => {
-          setIsRecording(true);
-        };
-
-        recognition.current.onend = () => {
-          setIsRecording(false);
-        };
-
-        // 말하는 동안 녹음 내용 반영
-        recognition.current.onresult = (event) => {
-          const newTranscript = Array.from(event.results)
-            .map((r) => r[0]?.transcript)
-            .join("");
-          
-          setInnerText(newTranscript);
-        }
-
-        recognition.current?.start();
-      } else {
-        recognition.current?.stop();
-      }
-    } catch (e) {
-      console.error("Speech Recognition error: ", e);
-      alert("음성 입력을 사용할 수 없습니다. 텍스트로 입력해주세요.");
-      setIsRecording(false);
+    if (isRecording) {
+      voiceController.stop();
+    } else {
+      voiceController.start();
     }
   }
 
@@ -206,17 +163,14 @@ export default function ChatInput({
     if (isSending) return "sending";
 
     // 2) disableVoice=false -> mic, recording, send
-    if (!disableVoice) {
+    if (isVoiceEnabled) {
       if (isRecording) return "recording";
       if (isVoiceMode) return "mic";
       return "send";
     }
 
-    // 3) disableVoice=true -> 텍스트가 있을 때만 send, 없으면 버튼 없애기
-    if (disableVoice) {
-      if (!isEmpty) return "send";
-      return null;
-    }
+    // 3) 텍스트가 있을 때만 send
+    if (!isEmpty) return "send"; 
 
     return null;
   }
