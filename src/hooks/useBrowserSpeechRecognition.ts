@@ -12,9 +12,6 @@ type Options = {
   /* 음성 인식 언어 */
   lang?: string;
 
-  /* interim / final transcript가 갱신될 때마다 호출 */
-  onTranscript: (text: string) => void;
-
   /* 음성 인식 시작 시 실행할 함수*/
   onStart?: () => void;
 
@@ -27,13 +24,13 @@ type Options = {
 
 export default function useBrowserSpeechRecognition({
   lang = "ko-KR",
-  onTranscript,
   onStart,
   onEnd,
   onError,
-}: Options) {
+}: Options = {}) {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const onTranscriptRef = useRef<(text: string) => void | undefined>(undefined);
 
   const start = () => {
     // 브라우저마다 다른 SpeechRecognition 생성자 가져오기
@@ -67,7 +64,7 @@ export default function useBrowserSpeechRecognition({
         .map((r) => r[0]?.transcript)
         .join("");
 
-      onTranscript(transcript);
+      onTranscriptRef.current?.(transcript);
     }
 
     recognition.onerror = (e) => {
@@ -90,8 +87,13 @@ export default function useBrowserSpeechRecognition({
   }, []);
 
   return {
-    start,        // 음성 인식 시작
-    stop,         // 음성 인식 종료
-    isRecording   // 음성 인식 상태
+    start,          // 음성 인식 시작
+    stop,           // 음성 인식 종료
+    isRecording,    // 음성 인식 상태
+    // 외부에서 음성 인식 결과(transcript) 처리 로직을 주입하기 위한 setter
+    // 음성 인식 이벤트는 React 생명주기와 무관하게 발생하므로 ref로 관리한다
+    set onTranscript(fn: (text: string) => void) {
+      onTranscriptRef.current = fn;
+    },
   };
 }

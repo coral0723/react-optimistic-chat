@@ -1,8 +1,8 @@
-import ChatInput from "../../../../src/components/ChatInput";
 import ChatList from "../../../../src/components/ChatList";
-import useOptimisticChat from "../../../../src/hooks/useOptimisticChat";
+import useVoiceOptimisticChat from "../../../../src/hooks/useVoiceOptimisticChat";
 import SendingDots from "../../../../src/components/indicators/SendingDots";
 import { useState } from "react";
+import useBrowserSpeechRecognition from "../../../../src/hooks/useBrowserSpeechRecognition";
 
 type Raw = {
   chatId: string;
@@ -41,12 +41,16 @@ export default function UseOptimisticChatPG() {
   const [forceError, setForceError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
+  const voice = useBrowserSpeechRecognition();
+
   const { 
     messages, 
-    sendUserMessage, 
     isPending, 
-    isInitialLoading 
-  } = useOptimisticChat<Raw, Raw>({
+    isInitialLoading,
+    startRecording,
+    stopRecording,
+  } = useVoiceOptimisticChat<Raw, Raw>({
+    voice: voice,
     queryKey: ["chat", roomId],
     queryFn: () => getChat(roomId),
     mutationFn: async (content) => {
@@ -110,10 +114,27 @@ export default function UseOptimisticChatPG() {
       />
 
       {/* 입력창 */}
-      <ChatInput
-        onSend={sendUserMessage}
-        isSending={isPending}
-      />
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() => {
+          if (voice.isRecording) {
+            stopRecording();
+          } else {
+            startRecording();
+          }
+        }}
+        className={`
+          w-full py-3 rounded-lg font-medium
+          ${isPending ? "bg-gray-400" : "bg-black text-white"}
+        `}
+      >
+        {isPending
+          ? "AI 응답 대기 중..."
+          : voice.isRecording
+            ? "녹음 종료"
+            : "녹음 시작"}
+      </button>
     </div>
   )
 }

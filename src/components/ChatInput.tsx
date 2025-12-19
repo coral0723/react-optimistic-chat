@@ -72,14 +72,18 @@ export default function ChatInput({
   const text = isControlled ? value! : innerText;
   const isEmpty = text.trim().length === 0;
 
-  const defaultVoice = useBrowserSpeechRecognition({
-    onTranscript: (text) => {
+  const defaultVoice = useBrowserSpeechRecognition();
+
+  useEffect(() => {
+    if (!defaultVoice) return;
+
+    defaultVoice.onTranscript = (text: string) => {
       if (!isControlled) {
         setInnerText(text);
       }
       onChange?.(text);
-    },
-  });
+    };
+  }, [defaultVoice, isControlled, onChange]);
 
   const voiceController =
     voice === true

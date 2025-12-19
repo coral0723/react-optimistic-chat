@@ -24,7 +24,7 @@ type Options<TQueryRaw, TMutationRaw> = {
   /* raw 데이터를 Message로 변환하는 mapper */
   map: MessageMapper<TQueryRaw | TMutationRaw>;
 
-  /* 음성 인식 */
+  /* 음성 입력을 제어하기 위한 컨트롤러(start / stop / transcript 연결) */
   voice: VoiceRecognitionController;
 
   /* mutation 에러가 발생한 경우 외부에서 처리하고 싶을 때 사용하는 콜백 */
@@ -46,7 +46,7 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
 }: Options<TQeuryRaw, TMutationRaw>) {
   const [isPending, setIsPending] = useState<boolean>(false); // AI 응답 대기 상태
   const queryClient = useQueryClient();
-  const currentTextRef = useRef("");
+  const currentTextRef = useRef(""); // 음성 인식 중간 결과를 렌더링과 분리하기 위해 useRef 사용
   const rollbackRef = useRef<Message[] | undefined>(undefined);
 
   // 내부적으로 queryFn(raw[]) -> Message[]로 변환해서 캐시에 저장
@@ -74,7 +74,6 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
       setIsPending(true);
 
       const prev = queryClient.getQueryData<Message[]>(queryKey);
-      rollbackRef.current = prev;
       
       // 조건부 cancleQueries
       if (prev) {
@@ -182,6 +181,11 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
       return next;
     });
   };
+    
+  // 음성 인식 콜백 연결
+  useEffect(() => {
+    voice.onTranscript = onTranscript;
+  }, [voice]);
 
   // 음성 인식 종료
   const stopRecording = () => {
@@ -197,11 +201,6 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
 
     mutation.mutate(finalText);
   };
-
-  // 음성 인식 콜백 연결
-  useEffect(() => {
-    voice.onTranscript = onTranscript;
-  }, [voice]);
 
   return {
     messages,          // Message[]

@@ -98,7 +98,6 @@ export default function UseOptimisticChatPG() {
       <ChatInput
         onSend={sendUserMessage}
         isSending={isPending}
-        disableVoice={true}
       />
     </div>
   );
