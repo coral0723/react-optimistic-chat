@@ -6,3 +6,5 @@ export { default as ChatList } from "./components/ChatList";
 export { default as ChatInput } from "./components/ChatInput";
 export { default as ChatContainer } from "./components/ChatContainer";
 export { default as useOptimisticChat } from "./hooks/useOptimisticChat";
+export { default as useBrowserSpeechRecognition } from "./hooks/useBrowserSpeechRecognition";
+export { default as useVoiceOptimisticChat } from "./hooks/useVoiceOptimisticChat";

@@ -1,0 +1,64 @@
+/* 전체 컨테이너 */
+.voice-chat-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 방 선택 버튼 */
+.room-selector {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.room-button {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.room-button.active {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+/* 에러 토글 */
+.error-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+/* 에러 메시지 */
+.error-message {
+  text-align: center;
+  color: #e53935;
+  font-weight: 500;
+}
+
+/* 녹음 버튼 */
+.record-button {
+  width: 100%;
+  padding: 12px 0;
+  border-radius: 8px;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.record-button.disabled {
+  background: #999;
+  cursor: not-allowed;
+}
