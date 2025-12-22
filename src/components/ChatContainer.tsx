@@ -3,10 +3,18 @@ import type { Message } from "../types/Message";
 import ChatInput from "./ChatInput";
 import ChatList from "./ChatList";
 
-type Props<T> = {
-  /* ChatList */
+type MessageProps = {
+  messages: Message[];
+  messageMapper?: never;
+};
+
+type RawProps<T> = {
   messages: T[];
-  messageMapper?: (msg: T) => Message;
+  messageMapper: (msg: T) => Message;
+}
+
+type CommonProps = {
+  /* ChatList */
   messageRenderer?: (msg: Message) => React.ReactNode;
   loadingRenderer?: React.ReactNode;
   listClassName?: string;
@@ -20,23 +28,30 @@ type Props<T> = {
 
   /* 전체 wrapper 커스텀 클래스 */
   className?: string;
-}
+};
 
-export default function ChatContainer<T>({
-  messages,
-  messageMapper,
-  messageRenderer,
-  loadingRenderer,
-  listClassName,
-  onSend,
-  isSending,
-  disableVoice,
-  placeholder,
-  inputClassName,
-  className,
-}: Props<T>) {
+type Props<T> = CommonProps & (MessageProps | RawProps<T>);
+
+export default function ChatContainer<T>(props: Props<T>) {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const {
+    messages,
+    messageRenderer,
+    loadingRenderer,
+    listClassName,
+    onSend,
+    isSending,
+    disableVoice,
+    placeholder,
+    inputClassName,
+    className,
+  } = props;
+
+  const mappedMessages: Message[] = 
+    typeof props.messageMapper === "function"
+      ? props.messages.map(props.messageMapper)
+      : (messages as Message[]);
 
   // 스크롤 위치 감지
   useEffect(() => {
@@ -91,8 +106,7 @@ export default function ChatContainer<T>({
           ref={scrollRef}
           className={`flex-1 overflow-y-auto chatContainer-scroll p-2`}>
           <ChatList
-            messages={messages}
-            {...(messageMapper && { messageMapper })}
+            messages={mappedMessages}
             {...(messageRenderer && { messageRenderer })}
             {... (loadingRenderer && { loadingRenderer })}
             {...(listClassName && { className: listClassName })}
