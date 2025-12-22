@@ -1,21 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Message } from "../types/Message";
+import type { BaseMessage, Message } from "../types/Message";
 import { useState } from "react";
 
-type MessageMapper<TRaw> = (raw: TRaw) => Message;
+type ExtraFromRaw<TRaw> = Omit<TRaw, keyof BaseMessage>;
 
-type Options<TQueryRaw, TMutationRaw> = {
+type MessageMapperResult = Pick<BaseMessage, "id" | "role" | "content">;
+
+type MessageMapper<TRaw> = Message<ExtraFromRaw<TRaw>>;
+
+type Options<TRaw> = {
   /* 해당 채팅의 queryKey */
   queryKey: readonly unknown[];
 
   /* 기존 채팅 내역을 가져오는 함수 */
-  queryFn: () => Promise<TQueryRaw[]>;
+  queryFn: () => Promise<TRaw[]>;
 
   /* 유저 입력(content)을 넘겨서 AI응답 1개를 받아오는 함수 */
-  mutationFn: (content: string) => Promise<TMutationRaw>; 
+  mutationFn: (content: string) => Promise<TRaw>; 
 
   /* raw 데이터를 Message로 변환하는 mapper */
-  map: MessageMapper<TQueryRaw | TMutationRaw>;
+  map: (raw: TRaw) => MessageMapperResult;
 
   /* mutation 에러가 발생한 경우 외부에서 처리하고 싶을 때 사용하는 콜백 */
   onError?: (error: unknown) => void;
@@ -24,7 +28,7 @@ type Options<TQueryRaw, TMutationRaw> = {
   gcTime?: number;
 };
 
-export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({ 
+export default function useOptimisticChat<TRaw>({ 
   queryKey, 
   queryFn, 
   mutationFn,
@@ -32,7 +36,7 @@ export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({
   onError, 
   staleTime = 0,
   gcTime = 0,
-}: Options<TQeuryRaw, TMutationRaw>) {
+}: Options<TRaw>) {
   const [isPending, setIsPending] = useState<boolean>(false); // AI 응답 대기 상태
   const queryClient = useQueryClient();
 
@@ -40,34 +44,37 @@ export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({
   const { 
     data: messages = [], 
     isLoading: isInitialLoading 
-  } = useQuery({
+  } = useQuery<MessageMapper<TRaw>[]>({
     queryKey,
     queryFn: async () => {
-      const rawList = await queryFn();
-      return rawList.map(map);
+      const raw = await queryFn();
+      return raw.map((r) => ({
+        ...map(r),
+        ...(r as ExtraFromRaw<TRaw>),
+      }));
     },
     staleTime,
     gcTime,
   });
 
   const mutation = useMutation<
-    TMutationRaw, 
+    TRaw, 
     unknown, 
     string, 
-    { prev?: Message[] | undefined }
+    { prev?: MessageMapper<TRaw>[] }
   >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
     onMutate: async (content) => {
       setIsPending(true);
 
-      const prev = queryClient.getQueryData<Message[]>(queryKey);
+      const prev = queryClient.getQueryData<MessageMapper<TRaw>[]>(queryKey);
       
       // 조건부 cancleQueries
       if (prev) {
         await queryClient.cancelQueries({ queryKey });
       }
 
-      queryClient.setQueryData<Message[]>(queryKey, (old) => {
+      queryClient.setQueryData<MessageMapper<TRaw>[]>(queryKey, (old) => {
         const base = old ?? [];
 
         return [
@@ -77,25 +84,28 @@ export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({
             id: crypto.randomUUID(),
             role: "USER",
             content,
-          },
+          } as MessageMapper<TRaw>,
           // AI placeholder 추가
           {
             id: crypto.randomUUID(),
             role: "AI",
             content: "",
             isLoading: true,
-          }
+          } as MessageMapper<TRaw>,
         ]; 
       });
 
       // rollback context 반환
-      return { prev };
+      return prev ? { prev } : {};
     },
     onSuccess: (rawAiResponse) => { 
       // 서버의 응답을 Message로 변환
-      const aiMessage = map(rawAiResponse);
+      const aiMessage = {
+        ...map(rawAiResponse),
+        ...(rawAiResponse as ExtraFromRaw<TRaw>),
+      };
 
-      queryClient.setQueryData<Message[]>(queryKey, (old) => {
+      queryClient.setQueryData(queryKey, (old?: MessageMapper<TRaw>[]) => {
         if (!old || old.length === 0) {
           return [aiMessage];
         }
@@ -124,10 +134,6 @@ export default function useOptimisticChat<TQeuryRaw, TMutationRaw>({
       }
 
       onError?.(error);
-    },
-    // mutation 이후 서버 기준 최신 데이터 재동기화
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
     },
   });
 

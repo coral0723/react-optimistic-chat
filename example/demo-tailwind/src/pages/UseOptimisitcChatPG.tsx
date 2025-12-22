@@ -8,6 +8,7 @@ type Raw = {
   chatId: string;
   sender: "ai" | "user";
   body: string;
+  end?: boolean;
 }
 
 async function getChat(roomId: string): Promise<Raw[]> {
@@ -46,7 +47,7 @@ export default function UseOptimisticChatPG() {
     sendUserMessage, 
     isPending, 
     isInitialLoading 
-  } = useOptimisticChat<Raw, Raw>({
+  } = useOptimisticChat<Raw>({
     queryKey: ["chat", roomId],
     queryFn: () => getChat(roomId),
     mutationFn: async (content) => {
@@ -66,6 +67,8 @@ export default function UseOptimisticChatPG() {
     staleTime: 60 * 1000,
     gcTime: 60 * 10000
   });
+
+  const lastMessageEnd = messages[messages.length - 1]?.end;
 
   return (
     <div className="max-w-xl mx-auto flex flex-col gap-4 p-4">
@@ -106,8 +109,18 @@ export default function UseOptimisticChatPG() {
       {/* 메시지 목록 */}
       <ChatList
         messages={messages}
+        messageMapper={(msg) => ({
+          content: msg.end === true ? "true입니당" : msg.content,
+        })}
         loadingRenderer={<SendingDots/>}
       />
+
+      {messages.length > 0 && (
+        <p className="text-center text-sm text-gray-500">
+          마지막 메시지 end 값:{" "}
+          <strong>{lastMessageEnd ? "true" : "false"}</strong>
+        </p>
+      )}
 
       {/* 입력창 */}
       <ChatInput

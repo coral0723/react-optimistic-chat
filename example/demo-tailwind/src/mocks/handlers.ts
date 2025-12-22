@@ -4,6 +4,8 @@ const delay = (ms: number) => new Promise((res) => {
   setTimeout(res, ms);
 });
 
+const randomBoolean = () => Math.random() < 0.5;
+
 export const handlers = [
   http.get(`/getChat`, async ({ request }) => {
     const url = new URL(request.url);
@@ -122,7 +124,8 @@ export const handlers = [
         result: {
           chatId: crypto.randomUUID(),
           sender: "ai",
-          body: `AI 응답: ${content}`
+          body: `AI 응답입니다: ${content}`,
+          end: randomBoolean(),
         }
       })
     );
