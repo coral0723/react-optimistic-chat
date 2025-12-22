@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Message } from "../types/Message";
+import type { Message, BaseMessage } from "../types/Message";
 import { useEffect, useRef, useState } from "react";
 
-type MessageMapper<TRaw> = (raw: TRaw) => Message;
+type MessageMapper<TRaw, TExtra> = (raw: TRaw) => Message<TExtra>;
 
 type VoiceRecognitionController = {
   start: () => void;
@@ -11,7 +11,7 @@ type VoiceRecognitionController = {
   onTranscript: (text: string) => void;
 }
 
-type Options<TQueryRaw, TMutationRaw> = {
+type Options<TQueryRaw, TMutationRaw, TExtra> = {
   /* 해당 채팅의 queryKey */
   queryKey: readonly unknown[];
 
@@ -22,7 +22,7 @@ type Options<TQueryRaw, TMutationRaw> = {
   mutationFn: (content: string) => Promise<TMutationRaw>; 
 
   /* raw 데이터를 Message로 변환하는 mapper */
-  map: MessageMapper<TQueryRaw | TMutationRaw>;
+  map: MessageMapper<TQueryRaw | TMutationRaw, TExtra>;
 
   /* 음성 입력을 제어하기 위한 컨트롤러(start / stop / transcript 연결) */
   voice: VoiceRecognitionController;
@@ -34,7 +34,7 @@ type Options<TQueryRaw, TMutationRaw> = {
   gcTime?: number;
 };
 
-export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({ 
+export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw, TExtra = {}>({ 
   queryKey, 
   queryFn, 
   mutationFn,
@@ -43,21 +43,21 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
   onError, 
   staleTime = 0,
   gcTime = 0,
-}: Options<TQeuryRaw, TMutationRaw>) {
+}: Options<TQeuryRaw, TMutationRaw, TExtra>) {
   const [isPending, setIsPending] = useState<boolean>(false); // AI 응답 대기 상태
   const queryClient = useQueryClient();
   const currentTextRef = useRef(""); // 음성 인식 중간 결과를 렌더링과 분리하기 위해 useRef 사용
-  const rollbackRef = useRef<Message[] | undefined>(undefined);
+  const rollbackRef = useRef<BaseMessage[] | undefined>(undefined);
 
   // 내부적으로 queryFn(raw[]) -> Message[]로 변환해서 캐시에 저장
   const { 
     data: messages = [], 
     isLoading: isInitialLoading 
-  } = useQuery({
+  } = useQuery<Message<TExtra>[]>({
     queryKey,
     queryFn: async () => {
-      const rawList = await queryFn();
-      return rawList.map(map);
+      const raw = await queryFn();
+      return raw.map(map);
     },
     staleTime,
     gcTime,
@@ -91,7 +91,7 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
             role: "AI",
             content: "",
             isLoading: true,
-          }
+          } as Message<TExtra>
         ]; 
       });
 
@@ -142,7 +142,7 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
   const startRecording = async() => {
     currentTextRef.current = "";
 
-    const prev = queryClient.getQueryData<Message[]>(queryKey);
+    const prev = queryClient.getQueryData<BaseMessage[]>(queryKey);
     rollbackRef.current = prev;
 
     if (prev) {
@@ -155,7 +155,7 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
         id: crypto.randomUUID(),
         role: "USER",
         content: "",
-      },
+      } as Message<TExtra>
     ]);
 
     voice.start();
@@ -203,7 +203,7 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw>({
   };
 
   return {
-    messages,          // Message[]
+    messages,          // Message<TExtra>[]
     isPending,         // 사용자가 채팅 전송 후 AI 응답이 올 때까지의 로딩
     isInitialLoading,  // 초기 로딩 상태
     startRecording,    // 음성 인식 시작 함수
