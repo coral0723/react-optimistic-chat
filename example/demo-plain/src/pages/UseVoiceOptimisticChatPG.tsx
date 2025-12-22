@@ -9,6 +9,7 @@ type Raw = {
   chatId: string;
   sender: "ai" | "user";
   body: string;
+  end?: boolean;
 };
 
 async function getChat(roomId: string): Promise<Raw[]> {
@@ -50,21 +51,23 @@ export default function UseVoiceOptimisticChatPG() {
     isInitialLoading,
     startRecording,
     stopRecording,
-  } = useVoiceOptimisticChat<Raw, Raw>({
+  } = useVoiceOptimisticChat<Raw>({
     voice,
     queryKey: ["chat", roomId],
     queryFn: () => getChat(roomId),
-    mutationFn: async (content) => ({
-      chatId: crypto.randomUUID(),
-      sender: "ai",
-      body: content,
-    }),
+    mutationFn: async (content) => {
+      if (forceError) 
+        throw new Error("강제 에러 발생 테스트");
+      return sendAI(content);
+    },
     map: (raw) => ({
       id: raw.chatId,
       role: raw.sender === "ai" ? "AI" : "USER",
       content: raw.body,
     }),
   });
+
+  const lastMessageEnd = messages[messages.length - 1]?.end;
 
   return (
     <div className="voice-chat-page">
@@ -102,8 +105,20 @@ export default function UseVoiceOptimisticChatPG() {
 
       <ChatList
         messages={messages}
+        messageMapper={(msg) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.end === true ? "true입니당" : msg.content,
+        })}
         loadingRenderer={<SendingDots />}
       />
+
+      {messages.length > 0 && (
+        <p className="text-center text-sm text-gray-500">
+          마지막 메시지 end 값:{" "}
+          <strong>{lastMessageEnd ? "true" : "false"}</strong>
+        </p>
+      )}
 
       {/* 음성 버튼 */}
       <button

@@ -7,4 +7,4 @@ export type BaseMessage = {
   isLoading?: boolean;
 }
 
-export type Message<TExtra = {}> = BaseMessage & TExtra;
+export type Message<T = {}> = BaseMessage & T;

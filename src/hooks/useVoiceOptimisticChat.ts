@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Message, BaseMessage } from "../types/Message";
 import { useEffect, useRef, useState } from "react";
 
-type MessageMapper<TRaw, TExtra> = (raw: TRaw) => Message<TExtra>;
-
 type VoiceRecognitionController = {
   start: () => void;
   stop: () => void;
@@ -11,18 +9,24 @@ type VoiceRecognitionController = {
   onTranscript: (text: string) => void;
 }
 
-type Options<TQueryRaw, TMutationRaw, TExtra> = {
+type ExtraFromRaw<TRaw> = Omit<TRaw, keyof BaseMessage>;
+
+type MessageMapperResult = Pick<BaseMessage, "id" | "role" | "content">;
+
+type MessageMapper<TRaw> = Message<ExtraFromRaw<TRaw>>;
+
+type Options<TRaw> = {
   /* 해당 채팅의 queryKey */
   queryKey: readonly unknown[];
 
   /* 기존 채팅 내역을 가져오는 함수 */
-  queryFn: () => Promise<TQueryRaw[]>;
+  queryFn: () => Promise<TRaw[]>;
 
   /* 유저 입력(content)을 넘겨서 AI응답 1개를 받아오는 함수 */
-  mutationFn: (content: string) => Promise<TMutationRaw>; 
+  mutationFn: (content: string) => Promise<TRaw>; 
 
   /* raw 데이터를 Message로 변환하는 mapper */
-  map: MessageMapper<TQueryRaw | TMutationRaw, TExtra>;
+  map: (raw: TRaw) => MessageMapperResult;
 
   /* 음성 입력을 제어하기 위한 컨트롤러(start / stop / transcript 연결) */
   voice: VoiceRecognitionController;
@@ -34,7 +38,7 @@ type Options<TQueryRaw, TMutationRaw, TExtra> = {
   gcTime?: number;
 };
 
-export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw, TExtra = {}>({ 
+export default function useVoiceOptimisticChat<TRaw>({ 
   queryKey, 
   queryFn, 
   mutationFn,
@@ -43,44 +47,47 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw, TExtra =
   onError, 
   staleTime = 0,
   gcTime = 0,
-}: Options<TQeuryRaw, TMutationRaw, TExtra>) {
+}: Options<TRaw>) {
   const [isPending, setIsPending] = useState<boolean>(false); // AI 응답 대기 상태
   const queryClient = useQueryClient();
   const currentTextRef = useRef(""); // 음성 인식 중간 결과를 렌더링과 분리하기 위해 useRef 사용
-  const rollbackRef = useRef<BaseMessage[] | undefined>(undefined);
+  const rollbackRef = useRef<MessageMapper<TRaw>[] | undefined>(undefined);
 
   // 내부적으로 queryFn(raw[]) -> Message[]로 변환해서 캐시에 저장
   const { 
     data: messages = [], 
     isLoading: isInitialLoading 
-  } = useQuery<Message<TExtra>[]>({
+  } = useQuery<MessageMapper<TRaw>[]>({
     queryKey,
     queryFn: async () => {
       const raw = await queryFn();
-      return raw.map(map);
+      return raw.map((r) => ({
+        ...map(r),
+        ...(r as ExtraFromRaw<TRaw>),
+      }));
     },
     staleTime,
     gcTime,
   });
 
   const mutation = useMutation<
-    TMutationRaw, 
+    TRaw, 
     unknown, 
     string, 
-    { prev?: Message[] | undefined }
+    { prev?: MessageMapper<TRaw>[] }
   >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
     onMutate: async () => {
       setIsPending(true);
 
-      const prev = queryClient.getQueryData<Message[]>(queryKey);
+      const prev = queryClient.getQueryData<MessageMapper<TRaw>[]>(queryKey);
       
       // 조건부 cancleQueries
       if (prev) {
         await queryClient.cancelQueries({ queryKey });
       }
 
-      queryClient.setQueryData<Message[]>(queryKey, (old) => {
+      queryClient.setQueryData<MessageMapper<TRaw>[]>(queryKey, (old) => {
         const base = old ?? [];
 
         return [
@@ -91,18 +98,21 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw, TExtra =
             role: "AI",
             content: "",
             isLoading: true,
-          } as Message<TExtra>
+          } as MessageMapper<TRaw>,
         ]; 
       });
 
       // rollback context 반환
-      return { prev };
+      return prev ?  { prev } : {};
     },
     onSuccess: (rawAiResponse) => { 
       // 서버의 응답을 Message로 변환
-      const aiMessage = map(rawAiResponse);
+      const aiMessage = {
+        ...map(rawAiResponse),
+        ...(rawAiResponse as ExtraFromRaw<TRaw>),
+      }
 
-      queryClient.setQueryData<Message[]>(queryKey, (old) => {
+      queryClient.setQueryData(queryKey, (old?: MessageMapper<TRaw>[]) => {
         if (!old || old.length === 0) {
           return [aiMessage];
         }
@@ -131,31 +141,27 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw, TExtra =
       }
 
       onError?.(error);
-    },
-    // mutation 이후 서버 기준 최신 데이터 재동기화
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
-    },
+    }
   });
 
   // 음성 녹음 시작
   const startRecording = async() => {
     currentTextRef.current = "";
 
-    const prev = queryClient.getQueryData<BaseMessage[]>(queryKey);
+    const prev = queryClient.getQueryData<MessageMapper<TRaw>[]>(queryKey);
     rollbackRef.current = prev;
 
     if (prev) {
       await queryClient.cancelQueries({ queryKey });
     }
 
-    queryClient.setQueryData<Message[]>(queryKey, (old) => [
+    queryClient.setQueryData(queryKey, (old?: MessageMapper<TRaw>[]) => [
       ...(old ?? []),
       {
         id: crypto.randomUUID(),
         role: "USER",
         content: "",
-      } as Message<TExtra>
+      } as MessageMapper<TRaw>,
     ]);
 
     voice.start();
@@ -165,7 +171,7 @@ export default function useVoiceOptimisticChat<TQeuryRaw, TMutationRaw, TExtra =
   const onTranscript = (text: string) => {
     currentTextRef.current = text;
 
-    queryClient.setQueryData<Message[]>(queryKey, (old) => {
+    queryClient.setQueryData(queryKey, (old?: MessageMapper<TRaw>[]) => {
       if (!old) return old;
 
       const next = [...old];
