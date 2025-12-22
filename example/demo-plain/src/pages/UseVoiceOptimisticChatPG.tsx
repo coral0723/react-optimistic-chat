@@ -106,8 +106,6 @@ export default function UseVoiceOptimisticChatPG() {
       <ChatList
         messages={messages}
         messageMapper={(msg) => ({
-          id: msg.id,
-          role: msg.role,
           content: msg.end === true ? "true입니당" : msg.content,
         })}
         loadingRenderer={<SendingDots />}
