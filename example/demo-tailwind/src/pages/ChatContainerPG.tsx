@@ -46,7 +46,7 @@ export default function ChatContainerPG() {
     sendUserMessage, 
     isPending, 
     isInitialLoading 
-  } = useOptimisticChat<Raw, Raw>({
+  } = useOptimisticChat<Raw>({
     queryKey: ["chat", roomId],
     queryFn: () => getChat(roomId),
     mutationFn: async (content) => {
