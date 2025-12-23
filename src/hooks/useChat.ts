@@ -1,19 +1,26 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import type { BaseMessage, Message } from "../types/Message";
 import { useState } from "react";
 
 type ExtraFromRaw<TRaw> = Omit<TRaw, keyof BaseMessage>;
 
-type MessageMapperResult = Pick<BaseMessage, "id" | "role" | "content">;
-
 type MessageMapper<TRaw> = Message<ExtraFromRaw<TRaw>>;
+
+type MessageMapperResult = Pick<BaseMessage, "id" | "role" | "content">;
 
 type Options<TRaw> = {
   /* 해당 채팅의 queryKey */
   queryKey: readonly unknown[];
 
   /* 기존 채팅 내역을 가져오는 함수 */
-  queryFn: () => Promise<TRaw[]>;
+  queryFn: (pageParam: unknown) => Promise<TRaw[]>;
+
+  initialPageParam: unknown;
+  
+  getNextPageParam: (
+    lastPage: MessageMapper<TRaw>[],
+    allPages: MessageMapper<TRaw>[][]
+  ) => unknown;
 
   /* 유저 입력(content)을 넘겨서 AI응답 1개를 받아오는 함수 */
   mutationFn: (content: string) => Promise<TRaw>; 
@@ -31,6 +38,8 @@ type Options<TRaw> = {
 export default function useChat<TRaw>({ 
   queryKey, 
   queryFn, 
+  initialPageParam,
+  getNextPageParam,
   mutationFn,
   map,
   onError, 
@@ -42,57 +51,70 @@ export default function useChat<TRaw>({
 
   // 내부적으로 queryFn(raw[]) -> Message[]로 변환해서 캐시에 저장
   const { 
-    data: messages = [], 
-    isLoading: isInitialLoading 
-  } = useQuery<MessageMapper<TRaw>[]>({
+    data, 
+    isLoading: isInitialLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery<MessageMapper<TRaw>[]>({
     queryKey,
-    queryFn: async () => {
-      const raw = await queryFn();
+    initialPageParam,
+    queryFn: async ({ pageParam }) => {
+      const raw = await queryFn(pageParam);
       return raw.map((r) => ({
         ...map(r),
         ...(r as ExtraFromRaw<TRaw>),
       }));
     },
+    getNextPageParam,
     staleTime,
     gcTime,
   });
+
+  const messages: MessageMapper<TRaw>[] = data?.pages.flat() ?? [];
 
   const mutation = useMutation<
     TRaw, 
     unknown, 
     string, 
-    { prev?: MessageMapper<TRaw>[] }
+    { prev?: InfiniteData<MessageMapper<TRaw>[]> }
   >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
     onMutate: async (content) => {
       setIsPending(true);
 
-      const prev = queryClient.getQueryData<MessageMapper<TRaw>[]>(queryKey);
+      const prev = queryClient.getQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey);
       
       // 조건부 cancleQueries
       if (prev) {
         await queryClient.cancelQueries({ queryKey });
       }
 
-      queryClient.setQueryData<MessageMapper<TRaw>[]>(queryKey, (old) => {
-        const base = old ?? [];
+      queryClient.setQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey, (old) => {
+        if (!old) return old;
 
-        return [
-          ...base,
-          // user 메시지 추가
+        const pages = [...old.pages];
+        const firstPage = pages[0] ?? [];
+
+        pages[0] = [
+          ...firstPage,
           {
             id: crypto.randomUUID(),
             role: "USER",
             content,
           } as MessageMapper<TRaw>,
-          // AI placeholder 추가
           {
             id: crypto.randomUUID(),
             role: "AI",
             content: "",
             isLoading: true,
           } as MessageMapper<TRaw>,
-        ]; 
+        ];
+
+        return {
+          ...old,
+          pages,
+        };
       });
 
       // rollback context 반환
@@ -105,22 +127,25 @@ export default function useChat<TRaw>({
         ...(rawAiResponse as ExtraFromRaw<TRaw>),
       };
 
-      queryClient.setQueryData(queryKey, (old?: MessageMapper<TRaw>[]) => {
-        if (!old || old.length === 0) {
-          return [aiMessage];
-        }
+      queryClient.setQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey, (old) => {
+        if (!old) return old;
 
-        const next = [...old];
-        const lastIndex = next.length - 1;
+        const pages = [...old.pages];
+        const firstPage = [...pages[0]!];
+        const lastIndex = firstPage.length - 1;
 
-        // AI placeholder 제거 + 실제 메시지로 변경
-        next[lastIndex] = {
-          ...next[lastIndex],
+        firstPage[lastIndex] = {
+          ...firstPage[lastIndex],
           ...aiMessage,
           isLoading: false,
         };
 
-        return next;
+        pages[0] = firstPage;
+
+        return {
+          ...old,
+          pages,
+        };
       });
 
       setIsPending(false);
@@ -147,6 +172,11 @@ export default function useChat<TRaw>({
     messages, // Message[]
     sendUserMessage, // (content: string) => void
     isPending, // 사용자가 채팅 전송 후 AI 응답이 올 때까지의 로딩
-    isInitialLoading // 초기 로딩 상태
+    isInitialLoading, // 초기 로딩 상태
+
+    // infinite query용
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   };
 }
