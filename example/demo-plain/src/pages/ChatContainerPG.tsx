@@ -1,5 +1,5 @@
 import { useState } from "react";
-import useOptimisticChat from "../../../../src/hooks/useOptimisticChat";
+import useChat from "../../../../src/hooks/useChat";
 import ChatContainer from "../../../../src/components/ChatContainer";
 import SendingDots from "../../../../src/components/indicators/SendingDots";
 import ChatMessage from "../../../../src/components/ChatMessage";
@@ -45,7 +45,7 @@ export default function ChatContainerPG() {
     sendUserMessage, 
     isPending, 
     isInitialLoading 
-  } = useOptimisticChat<Raw>({
+  } = useChat<Raw>({
     queryKey: ["chat", roomId],
     queryFn: () => getChat(roomId),
     mutationFn: async (content) => {

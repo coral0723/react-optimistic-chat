@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { BaseMessage, Message } from "../types/Message";
-import { useState } from "react";
+import type { Message, BaseMessage } from "../types/Message";
+import { useEffect, useRef, useState } from "react";
+
+type VoiceRecognitionController = {
+  start: () => void;
+  stop: () => void;
+  isRecording: boolean;
+  onTranscript: (text: string) => void;
+}
 
 type ExtraFromRaw<TRaw> = Omit<TRaw, keyof BaseMessage>;
 
@@ -21,6 +28,9 @@ type Options<TRaw> = {
   /* raw 데이터를 Message로 변환하는 mapper */
   map: (raw: TRaw) => MessageMapperResult;
 
+  /* 음성 입력을 제어하기 위한 컨트롤러(start / stop / transcript 연결) */
+  voice: VoiceRecognitionController;
+
   /* mutation 에러가 발생한 경우 외부에서 처리하고 싶을 때 사용하는 콜백 */
   onError?: (error: unknown) => void;
 
@@ -28,17 +38,20 @@ type Options<TRaw> = {
   gcTime?: number;
 };
 
-export default function useOptimisticChat<TRaw>({ 
+export default function useVoiceChat<TRaw>({ 
   queryKey, 
   queryFn, 
   mutationFn,
   map,
+  voice,
   onError, 
   staleTime = 0,
   gcTime = 0,
 }: Options<TRaw>) {
   const [isPending, setIsPending] = useState<boolean>(false); // AI 응답 대기 상태
   const queryClient = useQueryClient();
+  const currentTextRef = useRef(""); // 음성 인식 중간 결과를 렌더링과 분리하기 위해 useRef 사용
+  const rollbackRef = useRef<MessageMapper<TRaw>[] | undefined>(undefined);
 
   // 내부적으로 queryFn(raw[]) -> Message[]로 변환해서 캐시에 저장
   const { 
@@ -64,7 +77,7 @@ export default function useOptimisticChat<TRaw>({
     { prev?: MessageMapper<TRaw>[] }
   >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
-    onMutate: async (content) => {
+    onMutate: async () => {
       setIsPending(true);
 
       const prev = queryClient.getQueryData<MessageMapper<TRaw>[]>(queryKey);
@@ -79,12 +92,6 @@ export default function useOptimisticChat<TRaw>({
 
         return [
           ...base,
-          // user 메시지 추가
-          {
-            id: crypto.randomUUID(),
-            role: "USER",
-            content,
-          } as MessageMapper<TRaw>,
           // AI placeholder 추가
           {
             id: crypto.randomUUID(),
@@ -96,14 +103,14 @@ export default function useOptimisticChat<TRaw>({
       });
 
       // rollback context 반환
-      return prev ? { prev } : {};
+      return prev ?  { prev } : {};
     },
     onSuccess: (rawAiResponse) => { 
       // 서버의 응답을 Message로 변환
       const aiMessage = {
         ...map(rawAiResponse),
         ...(rawAiResponse as ExtraFromRaw<TRaw>),
-      };
+      }
 
       queryClient.setQueryData(queryKey, (old?: MessageMapper<TRaw>[]) => {
         if (!old || old.length === 0) {
@@ -134,19 +141,78 @@ export default function useOptimisticChat<TRaw>({
       }
 
       onError?.(error);
-    },
+    }
   });
 
-  // 유저 메시지 전송
-  const sendUserMessage = (content: string) => {
-    if (!content.trim()) return;
-    mutation.mutate(content);
+  // 음성 녹음 시작
+  const startRecording = async() => {
+    currentTextRef.current = "";
+
+    const prev = queryClient.getQueryData<MessageMapper<TRaw>[]>(queryKey);
+    rollbackRef.current = prev;
+
+    if (prev) {
+      await queryClient.cancelQueries({ queryKey });
+    }
+
+    queryClient.setQueryData(queryKey, (old?: MessageMapper<TRaw>[]) => [
+      ...(old ?? []),
+      {
+        id: crypto.randomUUID(),
+        role: "USER",
+        content: "",
+      } as MessageMapper<TRaw>,
+    ]);
+
+    voice.start();
   }
 
+  // 음성 중간 입력
+  const onTranscript = (text: string) => {
+    currentTextRef.current = text;
+
+    queryClient.setQueryData(queryKey, (old?: MessageMapper<TRaw>[]) => {
+      if (!old) return old;
+
+      const next = [...old];
+      const last = next.length - 1;
+
+      if (next[last]?.role !== "USER") return old;
+
+      next[last] = {
+        ...next[last],
+        content: text,
+      };
+
+      return next;
+    });
+  };
+    
+  // 음성 인식 콜백 연결
+  useEffect(() => {
+    voice.onTranscript = onTranscript;
+  }, [voice]);
+
+  // 음성 인식 종료
+  const stopRecording = () => {
+    voice.stop();
+
+    const finalText = currentTextRef.current.trim();
+    if (!finalText) {
+      if (rollbackRef.current) {
+        queryClient.setQueryData(queryKey, rollbackRef.current);
+      }
+      return;
+    }
+
+    mutation.mutate(finalText);
+  };
+
   return {
-    messages, // Message[]
-    sendUserMessage, // (content: string) => void
-    isPending, // 사용자가 채팅 전송 후 AI 응답이 올 때까지의 로딩
-    isInitialLoading // 초기 로딩 상태
+    messages,          // Message<TExtra>[]
+    isPending,         // 사용자가 채팅 전송 후 AI 응답이 올 때까지의 로딩
+    isInitialLoading,  // 초기 로딩 상태
+    startRecording,    // 음성 인식 시작 함수
+    stopRecording      // 음성 인식 종료 함수
   };
 }

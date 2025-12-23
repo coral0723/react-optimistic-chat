@@ -1,5 +1,5 @@
 import ChatList from "../../../../src/components/ChatList";
-import useVoiceOptimisticChat from "../../../../src/hooks/useVoiceOptimisticChat";
+import useVoiceChat from "../../../../src/hooks/useVoiceChat";
 import SendingDots from "../../../../src/components/indicators/SendingDots";
 import { useState } from "react";
 import useBrowserSpeechRecognition from "../../../../src/hooks/useBrowserSpeechRecognition";
@@ -37,7 +37,7 @@ async function sendAI(content: string): Promise<Raw> {
   return json.result;
 }
 
-export default function UseOptimisticChatPG() {
+export default function UseVoiceChatPG() {
   const [roomId, setRoomId] = useState<string>("room-1");
   const [forceError, setForceError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -50,7 +50,7 @@ export default function UseOptimisticChatPG() {
     isInitialLoading,
     startRecording,
     stopRecording,
-  } = useVoiceOptimisticChat<Raw>({
+  } = useVoiceChat<Raw>({
     voice: voice,
     queryKey: ["chat", roomId],
     queryFn: () => getChat(roomId),
