@@ -41,7 +41,7 @@ export default function UseChatPG() {
   const [roomId, setRoomId] = useState<string>("room-1");
   const [forceError, setForceError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const PAGE_SIZE = 4;
+  const PAGE_SIZE = 8;
 
   const { 
     messages, 
@@ -79,7 +79,7 @@ export default function UseChatPG() {
     gcTime: 60 * 10000
   });
 
-  const lastMessageEnd = messages[messages.length - 1]?.custom.end;
+  const lastMessageEnd = messages[messages.length - 1]?.custom.end ? true : false;
 
   return (
     <div className="max-w-xl mx-auto flex flex-col gap-4 p-4">

@@ -20,22 +20,42 @@ export const handlers = [
         message: "성공",
         result: [
           {
-            chatId: "1", 
+            chatId: `1${randomBoolean()}`, 
             sender: "user", 
             body: "안녕하세요!"
           }, 
           {
-            chatId: "2", 
+            chatId: `2${randomBoolean()}`, 
             sender: "ai", 
             body: `${roomId}, ${page}: 무엇을 도와드릴까요?`
           },
           {
-            chatId: "3", 
+            chatId: `3${randomBoolean()}`, 
             sender: "user", 
             body: "안녕하세요!"
           }, 
           {
-            chatId: "4", 
+            chatId: `4${randomBoolean()}`, 
+            sender: "ai", 
+            body: `${roomId}, ${page}: 무엇을 도와드릴까요?`
+          },
+          {
+            chatId: `5${randomBoolean()}`, 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: `6${randomBoolean()}`, 
+            sender: "ai", 
+            body: `${roomId}, ${page}: 무엇을 도와드릴까요?`
+          },
+          {
+            chatId: `7${randomBoolean()}`, 
+            sender: "user", 
+            body: "안녕하세요!"
+          }, 
+          {
+            chatId: `8${randomBoolean()}`, 
             sender: "ai", 
             body: `${roomId}, ${page}: 무엇을 도와드릴까요?`
           },

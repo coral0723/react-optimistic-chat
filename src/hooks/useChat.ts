@@ -137,12 +137,14 @@ export default function useChat<TRaw extends object>({
             id: crypto.randomUUID(),
             role: "USER",
             content,
+            custom: {}
           } as MessageMapper<TRaw>,
           {
             id: crypto.randomUUID(),
             role: "AI",
             content: "",
             isLoading: true,
+            custom: {}
           } as MessageMapper<TRaw>,
         ];
 
