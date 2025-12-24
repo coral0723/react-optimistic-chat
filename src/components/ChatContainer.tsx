@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Message } from "../types/Message";
 import ChatInput from "./ChatInput";
 import ChatList from "./ChatList";
+import LoadingSpinner from "./indicators/LoadingSpinner";
 
 type MessageProps = {
   messages: Message[];
@@ -26,6 +27,11 @@ type CommonProps = {
   placeholder?: string;
   inputClassName?: string;
 
+  /* infinite scroll */
+  fetchNextPage?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+
   /* 전체 wrapper 커스텀 클래스 */
   className?: string;
 };
@@ -45,6 +51,9 @@ export default function ChatContainer<T>(props: Props<T>) {
     disableVoice,
     placeholder,
     inputClassName,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     className,
   } = props;
 
@@ -53,22 +62,39 @@ export default function ChatContainer<T>(props: Props<T>) {
       ? props.messages.map(props.messageMapper)
       : (messages as Message[]);
 
-  // 스크롤 위치 감지
+  // 스크롤 이벤트 처리
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
-    el.scrollTop = el.scrollHeight;
-    const handleScroll = () => {
+    const handleScroll = async () => {
       const isBottom =
         el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
       setIsAtBottom(isBottom);
+
+      // 최상단 도달 시 과거 메시지 로딩
+      if (
+        el.scrollTop === 0 &&
+        hasNextPage &&
+        !isFetchingNextPage &&
+        fetchNextPage
+      ) {
+        const prevScrollHeight = el.scrollHeight;
+
+        await fetchNextPage();
+        
+        requestAnimationFrame(() => {
+          const newScrollHeight = el.scrollHeight;
+          el.scrollTop = newScrollHeight - prevScrollHeight;
+        });
+      }
     };
 
     el.addEventListener("scroll", handleScroll);
     return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+  // 메시지 변경 시 하단 고정
   useEffect(() => { 
     const el = scrollRef.current; 
     if (!el) return; 
@@ -104,7 +130,13 @@ export default function ChatContainer<T>(props: Props<T>) {
       >
         <div 
           ref={scrollRef}
-          className={`flex-1 overflow-y-auto chatContainer-scroll p-2`}>
+          className={`flex-1 overflow-y-auto chatContainer-scroll p-2`}
+        >
+          {hasNextPage && isFetchingNextPage && (
+            <div className="flex justify-center py-2">
+              <LoadingSpinner size="sm"/>
+            </div>
+          )}
           <ChatList
             messages={mappedMessages}
             {...(messageRenderer && { messageRenderer })}

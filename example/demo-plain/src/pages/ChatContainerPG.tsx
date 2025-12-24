@@ -11,8 +11,8 @@ type Raw = {
   body: string;
 };
 
-async function getChat(roomId: string): Promise<Raw[]> {
-  const res = await fetch(`/getChat?roomId=${roomId}`, {
+async function getChat(roomId: string, pageParam: number): Promise<Raw[]> {
+  const res = await fetch(`/getChat?roomId=${roomId}&page=${pageParam}`, {
     method: 'GET',
     cache: 'no-store',
   });
@@ -39,15 +39,26 @@ export default function ChatContainerPG() {
   const [forceError, setForceError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const roomId = "roomId";
+  const PAGE_SIZE = 8;
 
   const { 
     messages, 
     sendUserMessage, 
     isPending, 
-    isInitialLoading 
+    isInitialLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   } = useChat<Raw>({
     queryKey: ["chat", roomId],
-    queryFn: () => getChat(roomId),
+    queryFn: (pageParam) => getChat(roomId, pageParam as number),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPage) => {
+      if (lastPage.length === PAGE_SIZE) {
+        return allPage.length;
+      }
+      return undefined;
+    },
     mutationFn: async (content) => {
       return sendAI(content, forceError);
     },
@@ -95,6 +106,9 @@ export default function ChatContainerPG() {
         )}
         onSend={sendUserMessage}
         isSending={isPending}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
       />
     </div>
   );
