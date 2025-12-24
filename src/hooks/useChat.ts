@@ -71,7 +71,8 @@ export default function useChat<TRaw>({
     gcTime,
   });
 
-  const messages: MessageMapper<TRaw>[] = data?.pages.flat() ?? [];
+  const messages: MessageMapper<TRaw>[] = data ? [...data.pages].reverse().flat() : [];
+
 
   const mutation = useMutation<
     TRaw, 

@@ -12,8 +12,8 @@ type Raw = {
   end?: boolean;
 };
 
-async function getChat(roomId: string): Promise<Raw[]> {
-  const res = await fetch(`/getChat?roomId=${roomId}`, {
+async function getChat(roomId: string, pageParam: number): Promise<Raw[]> {
+  const res = await fetch(`/getChat?roomId=${roomId}&page=${pageParam}`, {
     method: "GET",
     cache: "no-store",
   });
@@ -39,11 +39,27 @@ export default function UseChatPG() {
   const [roomId, setRoomId] = useState<string>("room-1");
   const [forceError, setForceError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const PAGE_SIZE = 4;
 
-  const { messages, sendUserMessage, isPending, isInitialLoading } =
+  const { 
+    messages, 
+    sendUserMessage, 
+    isPending, 
+    isInitialLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage  
+  } =
     useChat<Raw>({
       queryKey: ["chat", roomId],
-      queryFn: () => getChat(roomId),
+      queryFn: (pageParam) => getChat(roomId, pageParam as number),
+      initialPageParam: 0,
+      getNextPageParam: (lastPage, allPage) => {
+        if (lastPage.length === PAGE_SIZE) {
+          return allPage.length;
+        }
+        return undefined;
+      },
       mutationFn: async (content) => {
         if (forceError) throw new Error("강제 에러 발생 테스트");
         return sendAI(content);
@@ -109,6 +125,15 @@ export default function UseChatPG() {
           마지막 메시지 end 값:{" "}
           <strong>{lastMessageEnd ? "true" : "false"}</strong>
         </p>
+      )}
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+        >
+          {isFetchingNextPage ? "이전 채팅 불러오는 중" : "이전 채팅 더 불러오기"}
+        </button>
       )}
 
       <ChatInput
