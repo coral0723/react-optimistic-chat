@@ -1,11 +1,19 @@
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import type { BaseMessage, Message } from "../types/Message";
+import type { BaseMessage } from "../types/Message";
 import { useState } from "react";
 
+/* Raw 데이터 중 Message에 매핑되지 않은 나머지 필드들 */
 type ExtraFromRaw<TRaw> = Omit<TRaw, keyof BaseMessage>;
 
-type MessageMapper<TRaw> = Message<ExtraFromRaw<TRaw>>;
+/* 기본 Message 구조에 custom 필드를 추가한 확장 메시지 타입 */
+type CustomMessage<TCustom> = BaseMessage & {
+  custom: TCustom;
+};
 
+/* useChat 내부에서 최종적으로 사용하는 Message 타입 */
+type MessageMapper<TRaw> = CustomMessage<ExtraFromRaw<TRaw>>;
+
+/* 사용자가 map 함수에서 반드시 반환해야 하는 최소 Message 필드 */
 type MessageMapperResult = Pick<BaseMessage, "id" | "role" | "content">;
 
 type Options<TRaw> = {
@@ -15,8 +23,10 @@ type Options<TRaw> = {
   /* 기존 채팅 내역을 가져오는 함수 */
   queryFn: (pageParam: unknown) => Promise<TRaw[]>;
 
+  /* 첫 페이지 번호 */
   initialPageParam: unknown;
   
+  /* 다음 페이지를 가져오기 위한 pageParam 계산 함수 */
   getNextPageParam: (
     lastPage: MessageMapper<TRaw>[],
     allPages: MessageMapper<TRaw>[][]
@@ -35,7 +45,31 @@ type Options<TRaw> = {
   gcTime?: number;
 };
 
-export default function useChat<TRaw>({ 
+/* 
+Raw 데이터와 map 결과를 분리하여
+map에 사용된 필드는 Message 최상위에 유지하고
+나머지 Raw 필드는 custom 객체로 수집하는 함수
+*/
+function splitRawToMessage<TRaw extends object>(
+  raw: TRaw,
+  mapped: MessageMapperResult
+): CustomMessage<ExtraFromRaw<TRaw>> {
+  const custom = {} as ExtraFromRaw<TRaw>;
+  const mappedValues = new Set(Object.values(mapped));
+
+  for (const [key, value] of Object.entries(raw)) {
+    if (!mappedValues.has(value)) {
+      (custom as any)[key] = value;
+    }
+  }
+
+  return {
+    ...mapped,
+    custom
+  };
+}
+
+export default function useChat<TRaw extends object>({ 
   queryKey, 
   queryFn, 
   initialPageParam,
@@ -49,7 +83,7 @@ export default function useChat<TRaw>({
   const [isPending, setIsPending] = useState<boolean>(false); // AI 응답 대기 상태
   const queryClient = useQueryClient();
 
-  // 내부적으로 queryFn(raw[]) -> Message[]로 변환해서 캐시에 저장
+  // 내부적으로 Raw 데이터를 Message 구조로 정규화하여 캐시에 저장
   const { 
     data, 
     isLoading: isInitialLoading,
@@ -61,10 +95,10 @@ export default function useChat<TRaw>({
     initialPageParam,
     queryFn: async ({ pageParam }) => {
       const raw = await queryFn(pageParam);
-      return raw.map((r) => ({
-        ...map(r),
-        ...(r as ExtraFromRaw<TRaw>),
-      }));
+      return raw.map((r) => {
+        const mapped = map(r);
+        return splitRawToMessage(r, mapped);
+      });
     },
     getNextPageParam,
     staleTime,
@@ -72,7 +106,6 @@ export default function useChat<TRaw>({
   });
 
   const messages: MessageMapper<TRaw>[] = data ? [...data.pages].reverse().flat() : [];
-
 
   const mutation = useMutation<
     TRaw, 
@@ -91,6 +124,7 @@ export default function useChat<TRaw>({
         await queryClient.cancelQueries({ queryKey });
       }
 
+      // query cache에 optimistic message를 직접 삽입
       queryClient.setQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey, (old) => {
         if (!old) return old;
 
@@ -123,10 +157,8 @@ export default function useChat<TRaw>({
     },
     onSuccess: (rawAiResponse) => { 
       // 서버의 응답을 Message로 변환
-      const aiMessage = {
-        ...map(rawAiResponse),
-        ...(rawAiResponse as ExtraFromRaw<TRaw>),
-      };
+      const mapped = map(rawAiResponse);
+      const aiMessage = splitRawToMessage(rawAiResponse, mapped);
 
       queryClient.setQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey, (old) => {
         if (!old) return old;

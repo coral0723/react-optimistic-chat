@@ -79,7 +79,7 @@ export default function UseChatPG() {
     gcTime: 60 * 10000
   });
 
-  const lastMessageEnd = messages[messages.length - 1]?.end;
+  const lastMessageEnd = messages[messages.length - 1]?.custom.end;
 
   return (
     <div className="max-w-xl mx-auto flex flex-col gap-4 p-4">
@@ -121,7 +121,7 @@ export default function UseChatPG() {
       <ChatList
         messages={messages}
         messageMapper={(msg) => ({
-          content: msg.end === true ? "true입니당" : msg.content,
+          content: msg.custom.end === true ? "true입니당" : msg.content,
         })}
         loadingRenderer={<SendingDots/>}
       />
