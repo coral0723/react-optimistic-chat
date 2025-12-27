@@ -11,8 +11,8 @@ type Raw = {
   end?: boolean;
 }
 
-async function getChat(roomId: string): Promise<Raw[]> {
-  const res = await fetch(`/getChat?roomId=${roomId}`, {
+async function getChat(roomId: string, pageParam: number): Promise<Raw[]> {
+  const res = await fetch(`/getChat?roomId=${roomId}&page=${pageParam}`, {
     method: 'GET',
     cache: 'no-store',
   });
@@ -41,6 +41,7 @@ export default function UseVoiceChatPG() {
   const [roomId, setRoomId] = useState<string>("room-1");
   const [forceError, setForceError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const PAGE_SIZE = 8;
 
   const voice = useBrowserSpeechRecognition();
 
@@ -50,10 +51,20 @@ export default function UseVoiceChatPG() {
     isInitialLoading,
     startRecording,
     stopRecording,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   } = useVoiceChat<Raw>({
     voice: voice,
     queryKey: ["chat", roomId],
-    queryFn: () => getChat(roomId),
+    queryFn: (pageParam) => getChat(roomId, pageParam as number),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPage) => {
+      if (lastPage.length === PAGE_SIZE) {
+        return allPage.length;
+      }
+      return undefined;
+    },
     mutationFn: async (content) => {
       if (forceError) 
         throw new Error("강제 에러 발생 테스트");
@@ -72,7 +83,7 @@ export default function UseVoiceChatPG() {
     gcTime: 60 * 10000
   });
 
-  const lastMessageEnd = messages[messages.length - 1]?.end;
+  const lastMessageEnd = messages[messages.length - 1]?.custom.end ? true : false;
 
   return (
     <div className="max-w-xl mx-auto flex flex-col gap-4 p-4">
@@ -114,7 +125,7 @@ export default function UseVoiceChatPG() {
       <ChatList
         messages={messages}
         messageMapper={(msg) => ({
-          content: msg.end === true ? "true입니당" : msg.content,
+          content: msg.custom.end === true ? "true입니당" : msg.content,
         })}
         loadingRenderer={<SendingDots/>}
       />
@@ -126,6 +137,14 @@ export default function UseVoiceChatPG() {
         </p>
       )}
 
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+        >
+          {isFetchingNextPage ? "이전 채팅 불러오는 중" : "이전 채팅 더 불러오기"}
+        </button>
+      )}
 
       {/* 입력창 */}
       <button
