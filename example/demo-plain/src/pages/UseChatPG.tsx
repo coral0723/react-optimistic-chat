@@ -1,6 +1,6 @@
 import ChatInput from "../../../../src/components/ChatInput";
 import ChatList from "../../../../src/components/ChatList";
-import useOptimisticChat from "../../../../src/hooks/useOptimisticChat";
+import useChat from "../../../../src/hooks/useChat";
 import SendingDots from "../../../../src/components/indicators/SendingDots";
 import { useState } from "react";
 import "./styles/UseOptimisticChatPG.css";
@@ -12,8 +12,8 @@ type Raw = {
   end?: boolean;
 };
 
-async function getChat(roomId: string): Promise<Raw[]> {
-  const res = await fetch(`/getChat?roomId=${roomId}`, {
+async function getChat(roomId: string, pageParam: number): Promise<Raw[]> {
+  const res = await fetch(`/getChat?roomId=${roomId}&page=${pageParam}`, {
     method: "GET",
     cache: "no-store",
   });
@@ -35,15 +35,31 @@ async function sendAI(content: string): Promise<Raw> {
   return json.result;
 }
 
-export default function UseOptimisticChatPG() {
+export default function UseChatPG() {
   const [roomId, setRoomId] = useState<string>("room-1");
   const [forceError, setForceError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const PAGE_SIZE = 8;
 
-  const { messages, sendUserMessage, isPending, isInitialLoading } =
-    useOptimisticChat<Raw>({
+  const { 
+    messages, 
+    sendUserMessage, 
+    isPending, 
+    isInitialLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage  
+  } =
+    useChat<Raw>({
       queryKey: ["chat", roomId],
-      queryFn: () => getChat(roomId),
+      queryFn: (pageParam) => getChat(roomId, pageParam as number),
+      initialPageParam: 0,
+      getNextPageParam: (lastPage, allPage) => {
+        if (lastPage.length === PAGE_SIZE) {
+          return allPage.length;
+        }
+        return undefined;
+      },
       mutationFn: async (content) => {
         if (forceError) throw new Error("강제 에러 발생 테스트");
         return sendAI(content);
@@ -60,7 +76,7 @@ export default function UseOptimisticChatPG() {
       gcTime: 60 * 10000,
     });
 
-  const lastMessageEnd = messages[messages.length - 1]?.end;
+  const lastMessageEnd = messages[messages.length - 1]?.custom.end ? true : false;
 
   return (
     <div className="usechat-container">
@@ -99,7 +115,7 @@ export default function UseOptimisticChatPG() {
       <ChatList
         messages={messages}
         messageMapper={(msg) => ({
-          content: msg.end === true ? "true입니당" : msg.content,
+          content: msg.custom.end === true ? "true입니당" : msg.content,
         })}
         loadingRenderer={<SendingDots/>}
       />
@@ -109,6 +125,15 @@ export default function UseOptimisticChatPG() {
           마지막 메시지 end 값:{" "}
           <strong>{lastMessageEnd ? "true" : "false"}</strong>
         </p>
+      )}
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+        >
+          {isFetchingNextPage ? "이전 채팅 불러오는 중" : "이전 채팅 더 불러오기"}
+        </button>
       )}
 
       <ChatInput
