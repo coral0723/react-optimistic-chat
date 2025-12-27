@@ -118,7 +118,13 @@ export default function useVoiceChat<TRaw extends object>({
     gcTime,
   });
 
-  const messages: MessageMapper<TRaw>[] = data ? [...data.pages].reverse().flat() : [];
+  const messages = data
+  ? data.pages
+      .map(page => [...page]) // page 복사
+      .reverse()
+      .flat()
+  : [];
+
 
   const mutation = useMutation<
     TRaw, 
@@ -248,15 +254,17 @@ export default function useVoiceChat<TRaw extends object>({
       if (!old) return old;
 
       const pages = [...old.pages];
-      const firstPage = pages[0]!;
-      const last = firstPage.length - 1;
+      const firstPage = [...pages[0]!];
+      const lastIndex = firstPage.length - 1;
 
-      if (firstPage[last]?.role !== "USER") return old;
+      if (firstPage[lastIndex]?.role !== "USER") return old;
 
-      firstPage[last] = {
-        ...firstPage[last],
+      firstPage[lastIndex] = {
+        ...firstPage[lastIndex],
         content: text,
       };
+
+      pages[0] = firstPage;
 
       return {
         ...old,
