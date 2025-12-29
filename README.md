@@ -22,7 +22,35 @@ AI 챗봇 서비스에서 필요한 **채팅 캐시 관리 및 optimistic update
 ### **4.** [Core Types](#core-types)  
 ### **5.** [Design Philosophy](#design-philosophy)  
 
-## Install & Requirements
+<br>
+
+## 📦 Install & Requirements
+### Installation
+```bash
+npm install react-optimistic-chat
+# or
+yarn add react-optimistic-chat
+```
+---
+### Peer Dependencies
+이 라이브러리는 아래 패키지들을 **peer dependency**로 사용합니다.  
+프로젝트에 반드시 설치되어 있어야 합니다.  
+```json
+{
+  "@tanstack/react-query": ">=5",
+  "react": ">=18",
+  "react-dom": ">=18"
+}
+```
+---
+### styles
+<code>react-optimistic-chat</code>의 **채팅 UI 컴포넌트**를 사용하려면  
+아래 스타일 파일을 반드시 import 해야 합니다.
+```ts
+import "react-optimistic-chat/style.css";
+```
+> React 프로젝트에서는 `App.tsx`에,  
+> Next.js(App Router)에서는 루트 `Layout.tsx`에서 import 하는 것을 권장합니다.
 
 <br>
 
@@ -49,3 +77,4 @@ AI 챗봇 서비스에서 필요한 **채팅 캐시 관리 및 optimistic update
 ## Design Philosophy
 
 <br>
+
