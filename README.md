@@ -172,8 +172,6 @@ const {
 });
 ```
 
-<br>
-
 ### Returned Values
 | name | type | description |
 |------|------|-------------|
@@ -184,8 +182,6 @@ const {
 | `fetchNextPage` | `() => Promise<unknown>` | 다음 채팅 페이지 요청 |
 | `hasNextPage` | `boolean \| undefined` | 다음 페이지 존재 여부 |
 | `isFetchingNextPage` | `boolean` | 페이지 로딩 상태 |
-
-<br>
 
 ### Options
 | name | type | required | description |
@@ -200,8 +196,6 @@ const {
 | `staleTime` | `number` | ❌ | 캐시가 fresh 상태로 유지되는 시간 (ms) |
 | `gcTime` | `number` | ❌ | 캐시가 GC 되기 전까지 유지되는 시간 (ms) |
 
-<br>
-
 ### 🔁 Optimistic Update Flow
 **1.** 사용자가 메시지 전송  
 **2.** USER 메시지 + 로딩 중인 AI 메시지를 즉시 캐시에 삽입  
@@ -209,10 +203,49 @@ const {
 **4.** 로딩 중인 AI 메시지를 실제 응답으로 교체  
 **5.** 에러 발생 시 이전 상태로 rollback  
 
---- 
+<br>
  
-### useBrowserSpeechRecognition
-### useVoiceChat
+<h2 id="usebrowserspeechrecognition">🪝 useBrowserSpeechRecognition</h2>
+
+<code>useBrowserSpeechRecognition</code>은 브라우저에서 제공하는  
+Speech Recognition API를 **React Hook 형태로 추상화한 훅**입니다.
+
+이 훅은 음성 인식 로직을 직접 다루지 않고도, <code>useVoiceChat</code>이나 <code>ChatInput</code>과 같은 Hook/UI에서   
+**음성 입력 기능을 간편하게 사용하고 싶은 사용자**를 위해 제공됩니다.
+
+- 브라우저 내장 음성 인식 API를 간단한 인터페이스로 제공
+- 음성 인식 시작 / 종료 제어
+- 현재 녹음 상태를 나타내는 <code>isRecording</code> 제공
+- 음성 인식 결과(transcript)를 외부 로직으로 전달 가능
+- 브라우저 미지원 환경에 대한 에러 처리 지원
+
+### Usage
+```ts
+const voice = useBrowserSpeechRecognition();
+```
+
+### Returned Values
+
+| name | type | description |
+|------|------|-------------|
+| `start` | `() => void` | 음성 인식 시작 |
+| `stop` | `() => void` | 음성 인식 종료 |
+| `isRecording` | `boolean` | 현재 음성 인식 진행 상태 |
+| `onTranscript` | `(fn: (text: string) => void) => void` | 음성 인식 결과(transcript)를 처리할 콜백 |
+
+
+### Options
+
+| name | type | required | description |
+|------|------|----------|-------------|
+| `lang` | `string` | ❌ | 음성 인식에 사용할 언어 코드 (기본값: `"ko-KR"`) |
+| `onStart` | `() => void` | ❌ | 음성 인식이 시작될 때 실행되는 콜백 |
+| `onEnd` | `() => void` | ❌ | 음성 인식이 종료될 때 실행되는 콜백 |
+| `onError` | `(error: unknown) => void` | ❌ | 음성 인식 중 에러가 발생했을 때 실행되는 콜백 |
+
+<br>
+
+# useVoiceChat
 
 <br>
 
@@ -228,6 +261,7 @@ const {
 ## Design Philosophy
 
 <br>
+
 
 
 
