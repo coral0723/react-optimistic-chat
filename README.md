@@ -24,7 +24,8 @@ AI 챗봇 서비스에서 필요한 **채팅 캐시 관리 및 optimistic update
 
 <br>
 
-## 📦 Install & Requirements
+<h2 id="install--requirements">📦 Install & Requirements</h2>
+
 ### Installation
 ```bash
 npm install react-optimistic-chat
@@ -77,4 +78,5 @@ import "react-optimistic-chat/style.css";
 ## Design Philosophy
 
 <br>
+
 
