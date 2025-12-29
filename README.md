@@ -11,17 +11,17 @@ AI 챗봇 서비스에서 필요한 **채팅 캐시 관리 및 optimistic update
 
 ## 목차
 #### **1.** [Install & Requirements](#install--requirements)  
-#### **2.** [Hooks](#hooks)  
+#### **2.** [Core Type](#core-type)  
+#### **3.** [Hooks](#hooks)  
 **\-** [useChat](#usechat)  
 **\-** [useBrowserSpeechRecognition](#usebrowserspeechrecognition)  
 **\-** [useVoiceChat](#usevoicechat)  
-#### **3.** [Components](#components)  
+#### **4.** [Components](#components)  
 **\-** [Indicators](#indicators)  
 **\-** [ChatMessage](#chatmessage)  
 **\-** [ChatList](#chatlist)   
 **\-** [ChatInput](#chatinput)   
 **\-** [ChatContainer](#chatcontainer)   
-#### **4.** [Core Types](#core-types)  
 #### **5.** [Design Philosophy](#design-philosophy)  
 
 <br>
@@ -61,7 +61,74 @@ import "react-optimistic-chat/style.css";
 
 <br>
 
-<h1 id="hooks">🔗 Hooks</h1>
+<h1 id="core-type">🧩 Core Type</h1>
+
+<code>react-optimistic-chat</code>은 채팅을 단순한 문자열 배열이 아닌  
+**일관된 Message 타입을 중심으로 관리**하도록 설계되었습니다.
+
+모든 Hooks와 UI 컴포넌트는 이 Core Type을 기준으로 동작하며,  
+서버로부터 전달되는 다양한 형태의 Raw 데이터를 **예측 가능한 구조로 정규화**하는 것을 목표로 합니다.  
+
+## 🧩 Message
+```ts
+type Message = {
+  id: number | string;
+  role: "USER" | "AI";
+  content: string;
+  isLoading?: boolean;
+  custom: Record<string, unknown>;
+};
+```
+
+| field | type | description |
+|------|------|-------------|
+| `id` | `number \| string` | 메시지를 식별하기 위한 고유 값 |
+| `role` | `"USER" \| "AI"` | 메시지의 주체<br/>`"USER"`: 사용자가 입력한 메시지<br>`"AI"`: AI가 생성한 응답 메시지 |
+| `content` | `string` | 메시지에 표시될 텍스트 내용 |
+| `isLoading` | `boolean` _(optional)_ | AI 응답을 기다리는 중인 메시지임을 나타내는 플래그<br>optimistic update 시 UI 상태 표현에 사용 |
+| `custom` | `Record<string, unknown>` | 서버에서 전달된 Raw 데이터 중 `id`, `role`, `content`에<br>포함되지 않은 모든 필드를 보존하는 객체 |
+
+<br>
+
+## 🧩 Example: \<Raw> → \<Message> 정규화
+```ts
+type Raw = {
+  messageId: string;
+  sender: "user" | "assistant";
+  text: string;
+  createdAt: string;
+  model: string;
+};
+```
+서버로부터 다음과 같은 <code>Raw</code> 채팅 데이터가 전달된다고 가정합니다.  
+
+```ts
+map: (raw: RawMessage) => ({
+  id: raw.messageId,
+  role: raw.sender === "user" ? "USER" : "AI",
+  content: raw.text,
+});
+```
+Hook에서 필수로 제공하는 <code>map</code> 함수를 다음과 같이 정의하면  
+
+```ts
+{
+  id: "abc123",
+  role: "AI",
+  content: "Hello! How can I help you?",
+  custom: {
+    createdAt: "2024-01-01T10:00:00Z",
+    model: "gpt-4o"
+  }
+}
+```
+내부적으로 <code>Message</code>는 아래와 같이 정규화됩니다.
+
+
+
+<br>
+
+<h1 id="hooks">🪝 Hooks</h1>
 
 <h2 id="usechat">🪝 useChat</h2>
 
@@ -80,8 +147,6 @@ AI 챗봇 서비스에 필요한 **채팅 히스토리 관리, optimistic update
 - TanStack Query의 캐시 메커니즘을 활용한 **안정적인 상태 동기화**
   - mutation 실패 시 이전 캐시 상태로 rollback
   - <code>staleTime</code>, <code>gcTime</code>을 통한 캐시 수명 제어
-
-<br>
 
 ### Usage
 ```ts
@@ -160,13 +225,10 @@ const {
 
 <br>
 
-## Core Types
-
-<br>
-
 ## Design Philosophy
 
 <br>
+
 
 
 
