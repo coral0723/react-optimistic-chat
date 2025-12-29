@@ -187,11 +187,11 @@ const {
 | name | type | required | description |
 |------|------|----------|-------------|
 | `queryKey` | `readonly unknown[]` | ✅ | 해당 채팅의 TanStack Query key |
-| `queryFn` | `(pageParam: unknown) => Promise<TRaw[]>` | ✅ | 기존 채팅 내역을 불러오는 함수 |
+| `queryFn` | `(pageParam: unknown) => Promise<Raw[]>` | ✅ | 기존 채팅 내역을 불러오는 함수 |
 | `initialPageParam` | `unknown` | ✅ | 첫 페이지 요청 시 사용할 pageParam |
 | `getNextPageParam` | `(lastPage: Message[], allPages: Message[][]) => unknown` | ✅ | 다음 페이지 요청을 위한 pageParam 계산 함수 |
-| `mutationFn` | `(content: string) => Promise<TRaw>` | ✅ | 유저 입력을 받아 AI 응답 1개를 반환하는 함수 |
-| `map` | `(raw: TRaw) => { id; role; content }` | ✅ | Raw 데이터를 Message 구조로 매핑하는 함수 |
+| `mutationFn` | `(content: string) => Promise<Raw>` | ✅ | 유저 입력을 받아 AI 응답 1개를 반환하는 함수 |
+| `map` | `(raw: Raw) => { id; role; content }` | ✅ | Raw 데이터를 Message 구조로 매핑하는 함수 |
 | `onError` | `(error: unknown) => void` | ❌ | mutation 에러 발생 시 호출되는 콜백 |
 | `staleTime` | `number` | ❌ | 캐시가 fresh 상태로 유지되는 시간 (ms) |
 | `gcTime` | `number` | ❌ | 캐시가 GC 되기 전까지 유지되는 시간 (ms) |
@@ -245,7 +245,102 @@ const voice = useBrowserSpeechRecognition();
 
 <br>
 
-# useVoiceChat
+<h2 id="usevoicechat">🪝 useVoiceChat</h2>
+
+<code>useVoiceChat</code>은 <code>useChat</code>의 캐시 구조와 optimistic update 흐름을 그대로 유지하면서,  
+**음성 인식 기반 채팅** 경험을 제공하는 Hook입니다.
+
+음성 인식 결과를 실시간으로 채팅 UI에 반영하고,  
+녹음 종료 시 최종 텍스트를 AI 요청으로 연결하는 흐름을 내부에서 관리합니다.
+
+- <code>useInfiniteQuery</code> 기반 **채팅 히스토리 캐시 관리**
+  - <code>useChat</code>과 동일한 페이지 단위 캐싱 구조
+  - 기존 텍스트 채팅과 동일한 Message 정규화 방식 유지
+- 음성 입력 기반 **Optimistic Update**
+  - 녹음 시작 시 USER 메시지를 즉시 캐시에 삽입
+  - 음성 인식 중간 결과를 실시간으로 메시지 content에 반영
+- 음성 인식 종료 시 **AI 요청 트리거**
+  - 최종 transcript를 mutationFn으로 전달
+  - AI 응답 대기 상태를 <code>isPending</code>으로 제공
+- TanStack Query의 캐시 메커니즘을 활용한 **안정적인 상태 동기화**
+  - 음성 입력 취소 또는 에러 발생 시 이전 캐시 상태로 rollback
+  - <code>staleTime</code>, <code>gcTime</code>을 통한 캐시 수명 제어
+- 음성 인식 로직을 외부에서 주입 가능
+  - <code>useBrowserSpeechRecognition</code> 또는 커스텀 음성 인식 컨트롤러 사용 가능
+ 
+### Usage
+```ts
+const voice = useBrowserSpeechRecognition();
+
+const {
+  messages,
+  isPending,
+  isInitialLoading,
+  startRecording,
+  stopRecording,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+} = useVoiceChat({
+  queryKey: ["chat", roomId],
+  queryFn: getChat,
+  initialPageParam: 0,
+  getNextPageParam,
+  mutationFn: sendAI,
+  map: (raw) => ({
+    id: raw.chatId,
+    role: raw.sender === "ai" ? "AI" : "USER",
+    content: raw.body,
+  }),
+  voice,
+});
+```
+
+### Returned Values
+| name                 | type                     | description                              |
+| -------------------- | ------------------------ | ---------------------------------------- |
+| `messages`           | `Message[]`              | 정규화된 메시지 배열                       |
+| `isPending`          | `boolean`                | AI 응답 대기 상태                |
+| `isInitialLoading`   | `boolean`                | `messages` 로딩 상태                         |
+| `startRecording`     | `() => Promise<void>`    | 음성 인식 시작 함수                        |
+| `stopRecording`      | `() => void`             | 음성 인식 종료 및 최종 텍스트 전송 함수                  |
+| `fetchNextPage`      | `() => Promise<unknown>` | 다음 채팅 페이지 요청                             |
+| `hasNextPage`        | `boolean \| undefined`   | 다음 페이지 존재 여부                             |
+| `isFetchingNextPage` | `boolean`                | 페이지 로딩 상태                                |
+
+### Options
+| name               | type                                                                              | required | description                                                       |
+| ------------------ | --------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
+| `queryKey`         | `readonly unknown[]`                                                              | ✅        | 해당 채팅의 TanStack Query key                                         |
+| `queryFn`          | `(pageParam: unknown) => Promise<Raw[]>`                                         | ✅        | 기존 채팅 내역을 불러오는 함수                                            |
+| `initialPageParam` | `unknown`                                                                         | ✅        | 첫 페이지 요청 시 사용할 pageParam                                          |
+| `getNextPageParam` | `(lastPage: Message[], allPages: Message[][]) => unknown` | ✅        | 다음 페이지 요청을 위한 pageParam 계산 함수                                     |
+| `mutationFn`       | `(content: string) => Promise<Raw>`                                              | ✅        | 음성 인식 결과를 받아 AI 응답 1개를 반환하는 함수                          |
+| `map`              | `(raw: Raw) => { id; role; content }`                                            | ✅        | Raw 데이터를 Message 구조로 매핑하는 함수                                      |
+| `onError`          | `(error: unknown) => void`                                                        | ❌        | mutation 에러 발생 시 호출되는 콜백                                          |
+| `staleTime`        | `number`                                                                          | ❌        | 캐시가 fresh 상태로 유지되는 시간 (ms)                                        |
+| `gcTime`           | `number`                                                                          | ❌        | 캐시가 GC 되기 전까지 유지되는 시간 (ms)                                        |
+| `voice`            | 아래 참조                                                      | ✅        | 음성 인식을 제어하는 컨트롤러 |
+
+
+### <code>voice</code> object shape
+```ts
+{
+  start: () => void;
+  stop: () => void;
+  isRecording: boolean;
+  onTranscript: (text: string) => void;
+}
+```
+
+### 🔁 Voice-based Optimistic Update Flow
+**1.** 음성 인식 시작  
+**2.** USER 메시지를 빈 content로 캐시에 즉시 삽입  
+**3.** 음성 인식 중간 결과를 실시간으로 메시지에 반영  
+**4.** 음성 인식 종료 + 로딩 중인 AI 메시지를 즉시 캐시에 삽입  
+**5.** 최종 transcript로 AI 요청 전송  
+**6.** AI placeholder 메시지를 실제 응답으로 교체  
+**7.** 에러 또는 빈 입력 시 이전 상태로 rollback  
 
 <br>
 
@@ -261,6 +356,7 @@ const voice = useBrowserSpeechRecognition();
 ## Design Philosophy
 
 <br>
+
 
 
 
