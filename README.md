@@ -364,13 +364,61 @@ const {
 ```
 
 ### Props
-| name   | type                           | description |
-| ------ | ------------------------------ | ----------- |
-| `size` | `"xs" \| "sm" \| "md" \| "lg"` | 컴포넌트의 크기   |
+| name   | type                           | required | description |
+| ------ | ------------------------------ |-----| ----------- |
+| `size` | `"xs" \| "sm" \| "md" \| "lg"` | ❌ | 컴포넌트의 크기<br>(<code>default</code>: "md")   |
 
 <br>
 
 <h2 id="chatmessage">🎨 ChatMessage</h2>
+
+<code>ChatMessage</code>는 단일 채팅 메시지를 렌더링하는 말풍선 컴포넌트입니다.  
+메시지의 <code>role</code>에 따라 AI / USER 레이아웃을 자동으로 분기하며,  
+아이콘, 위치, 스타일을 유연하게 커스터마이징할 수 있도록 설계되었습니다.
+
+| <img width="224" height="63" alt="Image" src="https://github.com/user-attachments/assets/e351d1f2-b476-41f5-a002-eee4119cf0a0" /> | <img width="174" height="61" alt="Image" src="https://github.com/user-attachments/assets/98a8e033-d364-49da-bdc1-bc0a9f842969" /> |
+| :---------------: | :---------------: |
+| **role="AI"** | **role="USER"** |
+
+### Usage
+```tsx
+<ChatMessage
+  id="1"
+  role="AI"
+  content="안녕하세요! 무엇을 도와드릴까요?"
+/>
+
+<ChatMessage
+  id="2"
+  role="USER"
+  content="질문이 있어요."
+/>
+
+<ChatMessage
+  id="3"
+  role="AI"
+  isLoading
+  loadingRenderer={<SendingDots/>}
+/>
+```
+
+### Props
+| name | type | required | description |
+| ----------------- | ----------------------------- | --------------- | --------------- |
+| `id`              | `string`                      | ✅ | 메시지의 고유 식별자      |
+| `role`            | `"AI" \| "USER"`              | ✅ | 메시지 주체<br><code>AI</code>: 좌측 메시지<br>  <code>USER</code>: 우측 메시지  |
+| `content`         | `string`                      | ✅ | 메시지 텍스트         |
+| `isLoading`       | `boolean`                     | ❌ | 로딩 상태 여부        |
+| `wrapperClassName` | `string` | ❌ | 메시지 wrapper 커스텀 클래스 |
+| `icon` | `React.ReactNode` | ❌ | AI 메시지에 표시할 커스텀 아이콘 |
+| `aiIconWrapperClassName` | `string` | ❌ | AI 아이콘 wrapper 커스텀 클래스 |
+| `aiIconColor` | `string` | ❌ | 기본 AI 아이콘 색상 클래스 |
+| `bubbleClassName` | `string` | ❌ | 공통 말풍선 커스텀 클래스 |
+| `aiBubbleClassName` | `string` | ❌ | AI 말풍선 커스텀 클래스 |
+| `userBubbleClassName` | `string` | ❌ | User 말풍선 커스텀 클래스 |
+| `position` | `"auto" \| "left" \| "right"` | ❌ | 말풍선 위치 설정 |
+| `loadingRenderer` | `React.ReactNode` | ❌ | 로딩 상태 시 렌더링할 커스텀 UI<br>(<code>default</code>: \<LoadingSpinner/>) |
+
 
 <br>
 
@@ -389,6 +437,7 @@ const {
 ## Design Philosophy
 
 <br>
+
 
 
 
