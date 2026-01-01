@@ -472,6 +472,47 @@ const {
 
 <h2 id="chatinput">🎨 ChatInput</h2>
 
+<code>ChatInput</code>은 **텍스트 입력과 음성 입력을 모두 지원하는 채팅 입력 컴포넌트**입니다.  
+**textarea** 기반 입력창과 전송 버튼을 제공하며,  
+마이크 버튼을 통해 음성을 텍스트로 변환해 입력할 수 있도록 설계되었습니다.  
+
+기본적으로 브라우저 음성 인식 기능을 사용한  
+<code>useBrowserSpeechRecognition</code> 훅이 설정되어 있으며,  
+다른 음성 인식 로직을 사용하고 싶은 경우 **voice** 옵션으로 교체할 수 있습니다.
+
+| <img width="534" height="69" alt="Image" src="https://github.com/user-attachments/assets/15c90e44-1a44-4243-87ec-7755610eafb2" />|
+| :---------------: | 
+| **ChatInput** |
+
+### Usage
+```tsx
+<ChatInput
+  onSend={(value) => {
+    console.log(value);
+  }}
+  isSending={isPending}
+/>
+```
+
+### Props
+| name              | type                                       | required | description                   |
+| ----------------- | ------------------------------------------ | -------- | ----------------------------- |
+| `onSend`          | `(value: string) => void \| Promise<void>` | ✅        | 메시지 전송 시 호출되는 콜백              |
+| `isSending`       | `boolean`                                  | ✅        | 메시지 전송 중 상태 여부                    |
+| `voice`           | `boolean \| VoiceRecognitionController`    | ❌        | 음성 인식 사용 여부 또는 커스텀 음성 인식 컨트롤러 |
+| `placeholder`     | `string`                                   | ❌        | textarea placeholder 텍스트      |
+| `className`       | `string`                                   | ❌        | 전체 wrapper 커스텀 클래스            |
+| `inputClassName`  | `string`                                   | ❌        | textarea 커스텀 클래스              |
+| `micButton`       | `{ className?: string; icon?: ReactNode }` | ❌        | 마이크 버튼 커스터마이징                 |
+| `recordingButton` | `{ className?: string; icon?: ReactNode }` | ❌        | 녹음 중 버튼 커스터마이징                |
+| `sendButton`      | `{ className?: string; icon?: ReactNode }` | ❌        | 전송 버튼 커스터마이징                  |
+| `sendingButton`   | `{ className?: string; icon?: ReactNode }` | ❌        | 전송 중 버튼 커스터마이징                |
+| `maxHeight`       | `number`                                   | ❌        | textarea 최대 높이(px)            |
+| `value`           | `string`                                   | ❌        | 컨트롤드 모드 입력값                   |
+| `onChange`        | `(value: string) => void`                  | ❌        | 컨트롤드 모드 입력 변경 핸들러             |
+| `submitOnEnter`   | `boolean`                                  | ❌        | Enter 키로 전송할지 여부              |
+
+
 <br>
 
 <h2 id="chatcontainer">🎨 ChatContainer</h2>
@@ -481,6 +522,7 @@ const {
 ## Design Philosophy
 
 <br>
+
 
 
 
