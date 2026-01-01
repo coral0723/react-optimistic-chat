@@ -11,7 +11,9 @@ AI 챗봇 서비스에서 필요한 **채팅 캐시 관리 및 optimistic update
 
 ## 목차
 #### **1.** [Install & Requirements](#install--requirements)  
-#### **2.** [Core Type](#core-type)  
+#### **2.** [Core Types](#core-types)  
+**\-** [Message](#message)  
+**\-** [VoiceRecognition](#voicerecognition)  
 #### **3.** [Hooks](#hooks)  
 **\-** [useChat](#usechat)  
 **\-** [useBrowserSpeechRecognition](#usebrowserspeechrecognition)  
@@ -61,15 +63,15 @@ import "react-optimistic-chat/style.css";
 
 <br>
 
-<h1 id="core-type">🧩 Core Type</h1>
+<h1 id="core-types">🧩 Core Types</h1>
+
+<h2 id="message">🧩 Message</h2>
 
 <code>react-optimistic-chat</code>은 채팅을 단순한 문자열 배열이 아닌  
 **일관된 Message 타입을 중심으로 관리**하도록 설계되었습니다.
 
 모든 Hooks와 UI 컴포넌트는 이 Core Type을 기준으로 동작하며,  
 서버로부터 전달되는 다양한 형태의 Raw 데이터를 **예측 가능한 구조로 정규화**하는 것을 목표로 합니다.  
-
-## 🧩 Message
 ```ts
 type Message = {
   id: number | string;
@@ -90,7 +92,7 @@ type Message = {
 
 <br>
 
-## 🧩 Example: \<Raw> → \<Message> 정규화
+## Example: \<Raw> → \<Message> 정규화
 ```ts
 type Raw = {
   messageId: string;
@@ -123,6 +125,32 @@ Hook에서 필수로 제공하는 <code>map</code> 함수를 다음과 같이 �
 }
 ```
 내부적으로 <code>Message</code>는 아래와 같이 정규화됩니다.
+
+<br>
+
+<h2 id="voicerecognition">🧩 VoiceRecognition</h2>
+
+<code>react-optimistic-chat</code>은 음성 입력을 단순한 브라우저 API 호출이 아닌  
+**일관된 VoiceRecognition 인터페이스를 통해 추상화**하도록 설계되었습니다.  
+
+이를 통해 입력 방식(브라우저, 외부 SDK, 커스텀 STT 등)에 관계없이  
+<code>useVoiceChat</code> 훅과 <code>ChatInput</code> 컴포넌트에서 동일한 방식으로 음성 인식 상태를 제어할 수 있습니다.
+
+```ts
+type VoiceRecognition = {
+  start: () => void;
+  stop: () => void;
+  isRecording: boolean;
+  onTranscript?: (text: string) => void;
+}
+```
+
+| field          | type                     | description         |
+| -------------- | ------------------------ | ------------------- |
+| `start`        | `() => void`             | 음성 인식을 시작하는 함수      |
+| `stop`         | `() => void`             | 음성 인식을 중단하는 함수      |
+| `isRecording`  | `boolean`                | 현재 음성 인식이 진행 중인지 여부 |
+| `onTranscript` | `(text: string) => void` | 인식된 음성 텍스트를 전달받는 콜백<br>• `useVoiceChat`에서는 필수<br>• `ChatInput`에서는 내부에서 자동으로 처리 |
 
 
 
@@ -282,6 +310,7 @@ const {
   hasNextPage,
   isFetchingNextPage,
 } = useVoiceChat({
+  voice,
   queryKey: ["chat", roomId],
   queryFn: getChat,
   initialPageParam: 0,
@@ -292,7 +321,6 @@ const {
     role: raw.sender === "ai" ? "AI" : "USER",
     content: raw.body,
   }),
-  voice,
 });
 ```
 
@@ -311,6 +339,7 @@ const {
 ### Options
 | name               | type                                                                              | required | description                                                       |
 | ------------------ | --------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
+| `voice`            | `VoiceRecognition`                                             | ✅        | 음성 인식을 제어하는 컨트롤러 |
 | `queryKey`         | `readonly unknown[]`                                                              | ✅        | 해당 채팅의 TanStack Query key                                         |
 | `queryFn`          | `(pageParam: unknown) => Promise<Raw[]>`                                         | ✅        | 기존 채팅 내역을 불러오는 함수                                            |
 | `initialPageParam` | `unknown`                                                                         | ✅        | 첫 페이지 요청 시 사용할 pageParam                                          |
@@ -320,18 +349,7 @@ const {
 | `onError`          | `(error: unknown) => void`                                                        | ❌        | mutation 에러 발생 시 호출되는 콜백                                          |
 | `staleTime`        | `number`                                                                          | ❌        | 캐시가 fresh 상태로 유지되는 시간 (ms)                                        |
 | `gcTime`           | `number`                                                                          | ❌        | 캐시가 GC 되기 전까지 유지되는 시간 (ms)                                        |
-| `voice`            | 아래 참조                                                      | ✅        | 음성 인식을 제어하는 컨트롤러 |
 
-
-### <code>voice</code> object shape
-```ts
-{
-  start: () => void;
-  stop: () => void;
-  isRecording: boolean;
-  onTranscript: (text: string) => void;
-}
-```
 
 ### 🔁 Voice-based Optimistic Update Flow
 **1.** 음성 인식 시작  
@@ -499,7 +517,7 @@ const {
 | ----------------- | ------------------------------------------ | -------- | ----------------------------- |
 | `onSend`          | `(value: string) => void \| Promise<void>` | ✅        | 메시지 전송 시 호출되는 콜백              |
 | `isSending`       | `boolean`                                  | ✅        | 메시지 전송 중 상태 여부                    |
-| `voice`           | `boolean \| VoiceRecognitionController`    | ❌        | 음성 인식 사용 여부 또는 커스텀 음성 인식 컨트롤러 |
+| `voice`           | `boolean \| VoiceRecognition`    | ❌        | 음성 인식 사용 여부 또는 커스텀 음성 인식 컨트롤러<br>(<code>default</code>: true) |
 | `placeholder`     | `string`                                   | ❌        | textarea placeholder 텍스트      |
 | `className`       | `string`                                   | ❌        | 전체 wrapper 커스텀 클래스            |
 | `inputClassName`  | `string`                                   | ❌        | textarea 커스텀 클래스              |
@@ -522,6 +540,7 @@ const {
 ## Design Philosophy
 
 <br>
+
 
 
 
