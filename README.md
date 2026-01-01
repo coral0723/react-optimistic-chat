@@ -344,18 +344,52 @@ const {
 
 <br>
 
-## Components
-### Indicators
-### ChatMessage
-### ChatList
-### ChatInput
-### ChatContainer
+<h1 id="components">🎨 Components</h1>
+
+<h2 id="indicators">🎨 Indicators</h2>
+
+<code>Indicators</code>는 로딩 상태를 시각적으로 표현하기 위한 컴포넌트 모음입니다.  
+현재 아래 두 가지 컴포넌트를 제공합니다.
+
+| <img src="https://github.com/user-attachments/assets/cd480e2f-5518-4588-bf90-e3461607bef1" alt="LoadingSpinner" width="120" /> | <img src="https://github.com/user-attachments/assets/0c30ce29-9535-480b-b74f-0f170a594951" alt="SendingDots" width="120" /> |
+| :---------------: | :---------------: |
+| **LoadingSpinner** | **SendingDots** |
+
+### Usage
+```tsx
+<LoadingSpinner size="lg" />
+```
+```tsx
+<SendingDots size="lg" />
+```
+
+### Props
+| name   | type                           | description |
+| ------ | ------------------------------ | ----------- |
+| `size` | `"xs" \| "sm" \| "md" \| "lg"` | 컴포넌트의 크기   |
+
+<br>
+
+<h2 id="chatmessage">🎨 ChatMessage</h2>
+
+<br>
+
+<h2 id="chatlist">🎨 ChatList</h2>
+
+<br>
+
+<h2 id="chatinput">🎨 ChatInput</h2>
+
+<br>
+
+<h2 id="chatcontainer">🎨 ChatContainer</h2>
 
 <br>
 
 ## Design Philosophy
 
 <br>
+
 
 
 
