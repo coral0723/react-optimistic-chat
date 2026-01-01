@@ -348,7 +348,7 @@ const {
 
 <h2 id="indicators">🎨 Indicators</h2>
 
-<code>Indicators</code>는 로딩 상태를 시각적으로 표현하기 위한 컴포넌트 모음입니다.  
+<code>Indicators</code>는 **로딩 상태를 시각적으로 표현하기 위한 컴포넌트 모음**입니다.  
 현재 아래 두 가지 컴포넌트를 제공합니다.
 
 | <img src="https://github.com/user-attachments/assets/cd480e2f-5518-4588-bf90-e3461607bef1" alt="LoadingSpinner" width="120" /> | <img src="https://github.com/user-attachments/assets/0c30ce29-9535-480b-b74f-0f170a594951" alt="SendingDots" width="120" /> |
@@ -372,7 +372,7 @@ const {
 
 <h2 id="chatmessage">🎨 ChatMessage</h2>
 
-<code>ChatMessage</code>는 단일 채팅 메시지를 렌더링하는 말풍선 컴포넌트입니다.  
+<code>ChatMessage</code>는 **단일 채팅 메시지를 렌더링하는 말풍선 컴포넌트**입니다.  
 메시지의 <code>role</code>에 따라 AI / USER 레이아웃을 자동으로 분기하며,  
 아이콘, 위치, 스타일을 유연하게 커스터마이징할 수 있도록 설계되었습니다.
 
@@ -424,6 +424,50 @@ const {
 
 <h2 id="chatlist">🎨 ChatList</h2>
 
+<code>ChatList</code>는 **채팅 메시지 목록을 렌더링하는 컴포넌트**입니다.  
+내부에서 <code>ChatMessage</code>를 사용해 메시지를 순서대로 나열하며,  
+메시지 매핑, 커스텀 렌더링을 통해 유연한 메시지 UI 구성이 가능합니다.  
+
+| <img width="524" height="450" alt="Image" src="https://github.com/user-attachments/assets/d55f54cc-22b3-4153-9982-5fe086aa5e31" /> |
+| :---------------: | 
+| **ChatList** |
+
+### Usage
+```tsx
+// 기본 사용법
+<ChatList
+  messages={messages}
+/>
+
+// 메시지 필드 변환
+<ChatList
+  messages={messages}
+  messageMapper={(msg) => ({
+    id: Number(msg.chatId),
+    role: msg.sender === "bot" ? "AI" : "USER",
+    content: msg.body,
+  })}
+/>
+
+// 커스텀 메시지 UI 사용
+<ChatList
+  messages={messages}
+  messageRenderer={(msg) => (
+    <CustomMessage key={msg.id} {...msg} />
+  )}
+/>
+```
+
+### Props
+| name              | type                                     | required | description                         |
+| ----------------- | ---------------------------------------- | -------- | ----------------------------------- |
+| `messages`        | `Raw[]`                              | ✅        | 렌더링할 메시지 배열                         |
+| `messageMapper`   | `(msg: Raw) => Message`               | ❌        | Raw 데이터를 Message 구조로 매핑하는 함수    |
+| `messageRenderer` | `(msg: Message) => React.ReactNode`      | ❌        | 기본 `ChatMessage` 대신 사용할 커스텀 메시지 렌더러 |
+| `className`       | `string`                                 | ❌        | 메시지 리스트 wrapper 커스텀 클래스             |
+| `loadingRenderer` | `React.ReactNode`                        | ❌        | AI 메시지의 로딩 상태에 전달할 커스텀 로딩 UI<br>(<code>default</code>: \<LoadingSpinner/>)        |
+
+
 <br>
 
 <h2 id="chatinput">🎨 ChatInput</h2>
@@ -437,6 +481,7 @@ const {
 ## Design Philosophy
 
 <br>
+
 
 
 
