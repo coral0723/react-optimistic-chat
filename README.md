@@ -210,7 +210,7 @@ type Message = {
   role: "USER" | "AI";
   content: string;
   isLoading?: boolean;
-  custom: Record<string, unknown>;
+  custom?: Record<string, unknown>;
 };
 ```
 
@@ -828,6 +828,7 @@ page[0] = [
 # 📄 License
 MIT License © 2025  
 See the [LICENSE](./LICENSE) file for details.
+
 
 
 
