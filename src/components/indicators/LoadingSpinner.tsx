@@ -1,10 +1,10 @@
 type Size = 'xs' | 'sm' | 'md' | 'lg';
 
 type Props = {
-  size: Size;
-}
+  size?: Size;
+};
 
-export default function LoadingSpinner({ size }: Props) {
+export default function LoadingSpinner({ size = "md" }: Props) {
   const sizeMap: Record<Size, number> = {
     xs: 24,
     sm: 32,

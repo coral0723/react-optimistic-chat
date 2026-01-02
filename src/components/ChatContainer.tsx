@@ -9,9 +9,9 @@ type MessageProps = {
   messageMapper?: never;
 };
 
-type RawProps<T> = {
-  messages: T[];
-  messageMapper: (msg: T) => Message;
+type RawProps<Raw> = {
+  messages: Raw[];
+  messageMapper: (msg: Raw) => Message;
 }
 
 type CommonProps = {
@@ -36,9 +36,9 @@ type CommonProps = {
   className?: string;
 };
 
-type Props<T> = CommonProps & (MessageProps | RawProps<T>);
+type Props<Raw> = CommonProps & (MessageProps | RawProps<Raw>);
 
-export default function ChatContainer<T>(props: Props<T>) {
+export default function ChatContainer<Raw>(props: Props<Raw>) {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const {

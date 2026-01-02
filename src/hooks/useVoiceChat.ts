@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import type { BaseMessage } from "../types/Message";
+import type { BaseMessage, Message, MessageCore } from "../types/Message";
 import { useEffect, useRef, useState } from "react";
 
 type VoiceRecognitionController = {
@@ -10,40 +10,29 @@ type VoiceRecognitionController = {
 }
 
 /* Raw 데이터 중 Message에 매핑되지 않은 나머지 필드들 */
-type ExtraFromRaw<TRaw> = Omit<TRaw, keyof BaseMessage>;
+type ExtractCustom<Raw> = Omit<Raw, keyof BaseMessage>;
 
-/* 기본 Message 구조에 custom 필드를 추가한 확장 메시지 타입 */
-type CustomMessage<TCustom> = BaseMessage & {
-  custom: TCustom;
-};
-
-/* useChat 내부에서 최종적으로 사용하는 Message 타입 */
-type MessageMapper<TRaw> = CustomMessage<ExtraFromRaw<TRaw>>;
-
-/* 사용자가 map 함수에서 반드시 반환해야 하는 최소 Message 필드 */
-type MessageMapperResult = Pick<BaseMessage, "id" | "role" | "content">;
-
-type Options<TRaw> = {
+type Options<Raw> = {
   /* 해당 채팅의 queryKey */
   queryKey: readonly unknown[];
 
   /* 기존 채팅 내역을 가져오는 함수 */
-  queryFn: (pageParam: unknown) => Promise<TRaw[]>;
+  queryFn: (pageParam: unknown) => Promise<Raw[]>;
 
   /* 첫 페이지 번호 */
   initialPageParam: unknown;
   
   /* 다음 페이지를 가져오기 위한 pageParam 계산 함수 */
   getNextPageParam: (
-    lastPage: MessageMapper<TRaw>[],
-    allPages: MessageMapper<TRaw>[][]
+    lastPage: Message<ExtractCustom<Raw>>[],
+    allPages: Message<ExtractCustom<Raw>>[][]
   ) => unknown;
 
   /* 유저 입력(content)을 넘겨서 AI응답 1개를 받아오는 함수 */
-  mutationFn: (content: string) => Promise<TRaw>; 
+  mutationFn: (content: string) => Promise<Raw>; 
 
   /* raw 데이터를 Message로 변환하는 mapper */
-  map: (raw: TRaw) => MessageMapperResult;
+  map: (raw: Raw) => MessageCore
 
   /* 음성 입력을 제어하기 위한 컨트롤러(start / stop / transcript 연결) */
   voice: VoiceRecognitionController;
@@ -60,11 +49,11 @@ Raw 데이터와 map 결과를 분리하여
 map에 사용된 필드는 Message 최상위에 유지하고
 나머지 Raw 필드는 custom 객체로 수집하는 함수
 */
-function splitRawToMessage<TRaw extends object>(
-  raw: TRaw,
-  mapped: MessageMapperResult
-): CustomMessage<ExtraFromRaw<TRaw>> {
-  const custom = {} as ExtraFromRaw<TRaw>;
+function splitRawToMessage<Raw extends object>(
+  raw: Raw,
+  mapped: MessageCore
+): Message<ExtractCustom<Raw>> {
+  const custom = {} as ExtractCustom<Raw>;
   const mappedValues = new Set(Object.values(mapped));
 
   for (const [key, value] of Object.entries(raw)) {
@@ -79,7 +68,7 @@ function splitRawToMessage<TRaw extends object>(
   };
 }
 
-export default function useVoiceChat<TRaw extends object>({ 
+export default function useVoiceChat<Raw extends object>({ 
   queryKey, 
   queryFn, 
   initialPageParam,
@@ -90,11 +79,11 @@ export default function useVoiceChat<TRaw extends object>({
   onError, 
   staleTime = 0,
   gcTime = 0,
-}: Options<TRaw>) {
+}: Options<Raw>) {
   const [isPending, setIsPending] = useState<boolean>(false); // AI 응답 대기 상태
   const queryClient = useQueryClient();
   const currentTextRef = useRef(""); // 음성 인식 중간 결과를 렌더링과 분리하기 위해 useRef 사용
-  const rollbackRef = useRef<InfiniteData<MessageMapper<TRaw>[]> | undefined>(undefined);
+  const rollbackRef = useRef<InfiniteData<Message<ExtractCustom<Raw>>[]> | undefined>(undefined);
 
   // 내부적으로 queryFn(raw[]) -> Message[]로 변환해서 캐시에 저장
   const { 
@@ -103,7 +92,7 @@ export default function useVoiceChat<TRaw extends object>({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery<MessageMapper<TRaw>[]>({
+  } = useInfiniteQuery<Message<ExtractCustom<Raw>>[]>({
     queryKey,
     initialPageParam,
     queryFn: async ({ pageParam }) => {
@@ -127,23 +116,23 @@ export default function useVoiceChat<TRaw extends object>({
 
 
   const mutation = useMutation<
-    TRaw, 
+    Raw, 
     unknown, 
     string, 
-    { prev?: InfiniteData<MessageMapper<TRaw>[]> }
+    { prev?: InfiniteData<Message<ExtractCustom<Raw>>[]> }
   >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
     onMutate: async () => {
       setIsPending(true);
 
-      const prev = queryClient.getQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey);
+      const prev = queryClient.getQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey);
       
       // 조건부 cancleQueries
       if (prev) {
         await queryClient.cancelQueries({ queryKey });
       }
 
-      queryClient.setQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey, (old) => {
+      queryClient.setQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey, (old) => {
         if (!old) return old;
 
         const pages = [...old.pages];
@@ -157,7 +146,7 @@ export default function useVoiceChat<TRaw extends object>({
             content: "",
             isLoading: true,
             custom: {}
-          } as MessageMapper<TRaw>,
+          } as Message<ExtractCustom<Raw>>,
         ];
 
         return {
@@ -174,7 +163,7 @@ export default function useVoiceChat<TRaw extends object>({
       const mapped = map(rawAiResponse);
       const aiMessage = splitRawToMessage(rawAiResponse, mapped);
 
-      queryClient.setQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey, (old) => {
+      queryClient.setQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey, (old) => {
         if (!old) return old;
 
         const pages = [...old.pages];
@@ -214,14 +203,14 @@ export default function useVoiceChat<TRaw extends object>({
   const startRecording = async() => {
     currentTextRef.current = "";
 
-    const prev = queryClient.getQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey);
+    const prev = queryClient.getQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey);
     rollbackRef.current = prev;
 
     if (prev) {
       await queryClient.cancelQueries({ queryKey });
     }
 
-    queryClient.setQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey, (old) => {
+    queryClient.setQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey, (old) => {
       if (!old) return old;
 
       const pages = [...old.pages];
@@ -234,7 +223,7 @@ export default function useVoiceChat<TRaw extends object>({
           role: "USER",
           content: "",
           custom: {},
-        } as MessageMapper<TRaw>,
+        } as Message<ExtractCustom<Raw>>,
       ];
 
       return {
@@ -250,7 +239,7 @@ export default function useVoiceChat<TRaw extends object>({
   const onTranscript = (text: string) => {
     currentTextRef.current = text;
 
-    queryClient.setQueryData<InfiniteData<MessageMapper<TRaw>[]>>(queryKey, (old) => {
+    queryClient.setQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey, (old) => {
       if (!old) return old;
 
       const pages = [...old.pages];
