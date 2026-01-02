@@ -1,4 +1,5 @@
 export type { Message } from './types/Message';
+export type { VoiceRecognition } from './types/VoiceRecognition';
 export { default as LoadingSpinner } from './components/indicators/LoadingSpinner';
 export { default as SendingDots } from './components/indicators/SendingDots';
 export { default as ChatMessage } from "./components/ChatMessage";
