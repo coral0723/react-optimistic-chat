@@ -30,7 +30,7 @@ AI 챗봇 서비스에서 필요한 **채팅 캐시 관리 및 optimistic update
 **\-** [ChatList](#chatlist)   
 **\-** [ChatInput](#chatinput)   
 **\-** [ChatContainer](#chatcontainer)   
-#### **6.** [Design Philosophy](#design-philosophy)  
+#### **6.** [Notes](#notes)  
 
 <br>
 
@@ -771,9 +771,60 @@ const {
 
 <br>
 
-## Design Philosophy
+<h1 id="notes">📝 Notes</h1>
+
+## 1. 서버 사이드 페이지네이션은 필수입니다  
+이 라이브러리는 채팅 데이터를 **무한 스크롤** 기반으로 관리합니다.  
+따라서 서버는 반드시 **page 단위로 과거 채팅 내역을 조회**할 수 있어야 합니다.  
 
 <br>
+
+## 2. 페이지 기준은 "과거 → 최신” 순서를 권장합니다  
+각 페이지는 **시간 오름차순(과거 → 최신)** 으로 정렬된 데이터를 반환해야 합니다.  
+이 구조를 기준으로 스크롤 위치를 유지하며 이전 페이지를 자연스럽게 연결합니다.  
+```ts
+pages = [
+  page[0], // 가장 최근 페이지
+  page[1],
+  page[2],
+  page[3], // fetchNextPageParam으로 불러온 과거 채팅
+];
+```
+```ts
+page[0] = [
+  { chatId: 0, time: "12:00" }, // 과거
+  { chatId: 1, time: "12:10" },
+  { chatId: 2, time: "12:20" },
+  { chatId: 3, time: "12:30" }, // 최신
+];
+```
+
+<br>
+
+## 3. Optimistic Message는 서버 응답으로 교체되는 구조입니다
+메시지 전송 시
+
+**1.** 사용자 메시지를 즉시 캐시에 추가  
+**2.** 서버 응답 성공 → 해당 메시지를 실제 응답 메시지로 교체  
+**3.** 실패 시 → optimistic 메시지 롤백 + onError 호출  
+
+이 구조를 전제로 UI가 설계되어 있으므로
+서버는 **단일 메시지 단위 응답**을 반환하는 것을 권장합니다.
+
+<br>
+
+## 4. ChatContainer는 “빠른 구현용” 컴포넌트입니다  
+<code>ChatContainer</code>는 다음을 한 번에 제공합니다  
+- 메시지 리스트 렌더링  
+- 입력창 + 전송 처리
+- 상단 스크롤 기반 과거 메시지 로딩
+- 스크롤 위치 자동 보정
+
+보다 세밀한 UI 제어가 필요한 경우에는  
+<code>ChatList</code> + <code>ChatInput</code>을 직접 조합해 사용하는 것을 권장합니다.
+
+<br>
+
 
 
 
