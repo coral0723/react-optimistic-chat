@@ -9,22 +9,28 @@ AI 챗봇 서비스에서 필요한 **채팅 캐시 관리 및 optimistic update
 
 <br>
 
+> 이 라이브러리는 AI 응답 생성 기능을 포함하지 않으며,  
+> 기존 API와 결합해 채팅 상태 관리와 UI 구현에만 집중합니다.
+
+<br>
+
 ## 목차
 #### **1.** [Install & Requirements](#install--requirements)  
-#### **2.** [Core Types](#core-types)  
+#### **2.** [Quick Start](#quick-start)  
+#### **3.** [Core Types](#core-types)  
 **\-** [Message](#message)  
 **\-** [VoiceRecognition](#voicerecognition)  
-#### **3.** [Hooks](#hooks)  
+#### **4.** [Hooks](#hooks)  
 **\-** [useChat](#usechat)  
 **\-** [useBrowserSpeechRecognition](#usebrowserspeechrecognition)  
 **\-** [useVoiceChat](#usevoicechat)  
-#### **4.** [Components](#components)  
+#### **5.** [Components](#components)  
 **\-** [Indicators](#indicators)  
 **\-** [ChatMessage](#chatmessage)  
 **\-** [ChatList](#chatlist)   
 **\-** [ChatInput](#chatinput)   
 **\-** [ChatContainer](#chatcontainer)   
-#### **5.** [Design Philosophy](#design-philosophy)  
+#### **6.** [Design Philosophy](#design-philosophy)  
 
 <br>
 
@@ -60,6 +66,132 @@ import "react-optimistic-chat/style.css";
 ```
 > React 프로젝트에서는 `App.tsx`에,  
 > Next.js(App Router)에서는 루트 `Layout.tsx`에서 import 하는 것을 권장합니다.
+
+<br>
+
+<h1 id="quick-start">🚀 Quick Start</h1>
+
+아래 예제는 서버로부터 전달되는 Raw 채팅 데이터를  
+<code>useChat</code>과 <code>ChatContainer</code>를 조합해 **최소한의 설정으로 채팅 UI를 구성하는 방법**을 보여줍니다.  
+
+**Raw 데이터 → Message 타입 정규화 → 캐싱 → 렌더링**까지의 흐름을 한 번에 확인할 수 있습니다.  
+
+<br>
+
+## 1️⃣ RawMessage
+서버로부터 전달되는 채팅 데이터는 다음과 같은 형태라고 가정합니다.  
+```ts
+type Raw = {
+  chatId: string;
+  sender: "ai" | "user";
+  body: string;
+};
+```
+
+<br>
+
+## 2️⃣ getChat & sendAI
+채팅 목록을 불러오고, 사용자 메시지를 서버로 전송하는 함수는 다음과 같은 형태라고 가정합니다.  
+```ts
+async function getChat(roomId: string, page: number): Promise<Raw[]> {
+  const res = await fetch(`/getChat?roomId=${roomId}&page=${page}`);
+
+  if (!res.ok) {
+    throw new Error("채팅 불러오기 실패");
+  }
+
+  const json = await res.json();
+  return json.result;
+}
+
+async function sendAI(content: string): Promise<Raw> {
+  const res = await fetch(`/sendAI`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!res.ok) {
+    throw new Error("AI 응답 실패");
+  }
+
+  const json = await res.json();
+  return json.result;
+}
+```
+
+<br>
+
+## 3️⃣ ChatExample 
+<code>useChat</code> 훅으로 메시지 상태를 관리하고,  
+<code>ChatContainer</code> 컴포넌트에 전달해 채팅 UI + 무한 스크롤을 구성합니다.  
+
+이때 서버의 Raw 데이터를 Message 타입의  
+<code>id</code>, <code>role</code>, <code>content</code> 필드에 **정확히 매핑**합니다.
+
+```tsx
+export default function ChatExample() {
+  const roomId = "room-1";
+  const PAGE_SIZE = 8;
+
+  const {
+    messages,
+    sendUserMessage,
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useChat<Raw>({
+    queryKey: ["chat", roomId],
+    queryFn: (pageParam) => getChat(roomId, pageParam as number),
+    initialPageParam: 0,
+
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === PAGE_SIZE ? allPages.length : undefined,
+
+    mutationFn: sendAI,
+
+    map: (raw) => ({
+      id: raw.chatId,
+      role: raw.sender === "ai" ? "AI" : "USER",
+      content: raw.body,
+    }),
+  });
+
+  return (
+    <ChatContainer
+      className="h-[80vh]"
+      messages={messages}
+      onSend={sendUserMessage}
+      isSending={isPending}
+      fetchNextPage={fetchNextPage}
+      hasNextPage={hasNextPage}
+      isFetchingNextPage={isFetchingNextPage}
+    />
+  );
+}
+```
+
+<br>
+
+## 4️⃣ VoiceChatExample
+음성 입력 기반 채팅을 사용하고 싶은 경우,  
+<code>useBrowserSpeechRecognition</code>을 생성한 뒤  
+<code>useVoiceChat</code>의 <code>voice</code> 옵션으로 전달하면 됩니다.  
+
+```tsx
+const voice = useBrowserSpeechRecognition();
+
+const {
+  // 음성 제어용 API
+  startRecording,
+  stopRecording,
+  ...
+} = useVoiceChat<Raw>({
+  voice,
+  ...
+});
+```
 
 <br>
 
@@ -176,6 +308,8 @@ AI 챗봇 서비스에 필요한 **채팅 히스토리 관리, optimistic update
   - mutation 실패 시 이전 캐시 상태로 rollback
   - <code>staleTime</code>, <code>gcTime</code>을 통한 캐시 수명 제어
 
+<br>
+
 ### Usage
 ```ts
 const {
@@ -200,6 +334,8 @@ const {
 });
 ```
 
+<br>
+
 ### Returned Values
 | name | type | description |
 |------|------|-------------|
@@ -210,6 +346,8 @@ const {
 | `fetchNextPage` | `() => Promise<unknown>` | 다음 채팅 페이지 요청 |
 | `hasNextPage` | `boolean \| undefined` | 다음 페이지 존재 여부 |
 | `isFetchingNextPage` | `boolean` | 페이지 로딩 상태 |
+
+<br> 
 
 ### Options
 | name | type | required | description |
@@ -223,6 +361,8 @@ const {
 | `onError` | `(error: unknown) => void` | ❌ | mutation 에러 발생 시 호출되는 콜백 |
 | `staleTime` | `number` | ❌ | 캐시가 fresh 상태로 유지되는 시간 (ms) |
 | `gcTime` | `number` | ❌ | 캐시가 GC 되기 전까지 유지되는 시간 (ms) |
+
+<br>
 
 ### 🔁 Optimistic Update Flow
 **1.** 사용자가 메시지 전송  
@@ -247,11 +387,15 @@ Speech Recognition API를 **React Hook 형태로 추상화한 훅**입니다.
 - 음성 인식 결과(transcript)를 외부 로직으로 전달 가능
 - 브라우저 미지원 환경에 대한 에러 처리 지원
 
+<br>
+
 ### Usage
 ```ts
 const voice = useBrowserSpeechRecognition();
 ```
 
+<br>
+ 
 ### Returned Values
 
 | name | type | description |
@@ -261,7 +405,8 @@ const voice = useBrowserSpeechRecognition();
 | `isRecording` | `boolean` | 현재 음성 인식 진행 상태 |
 | `onTranscript` | `(fn: (text: string) => void) => void` | 음성 인식 결과(transcript)를 처리할 콜백 |
 
-
+<br>
+ 
 ### Options
 
 | name | type | required | description |
@@ -295,7 +440,9 @@ const voice = useBrowserSpeechRecognition();
   - <code>staleTime</code>, <code>gcTime</code>을 통한 캐시 수명 제어
 - 음성 인식 로직을 외부에서 주입 가능
   - <code>useBrowserSpeechRecognition</code> 또는 커스텀 음성 인식 컨트롤러 사용 가능
- 
+
+<br>
+
 ### Usage
 ```ts
 const voice = useBrowserSpeechRecognition();
@@ -324,6 +471,8 @@ const {
 });
 ```
 
+<br>
+ 
 ### Returned Values
 | name                 | type                     | description                              |
 | -------------------- | ------------------------ | ---------------------------------------- |
@@ -336,6 +485,8 @@ const {
 | `hasNextPage`        | `boolean \| undefined`   | 다음 페이지 존재 여부                             |
 | `isFetchingNextPage` | `boolean`                | 페이지 로딩 상태                                |
 
+<br>
+ 
 ### Options
 | name               | type                                                                              | required | description                                                       |
 | ------------------ | --------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
@@ -350,7 +501,8 @@ const {
 | `staleTime`        | `number`                                                                          | ❌        | 캐시가 fresh 상태로 유지되는 시간 (ms)                                        |
 | `gcTime`           | `number`                                                                          | ❌        | 캐시가 GC 되기 전까지 유지되는 시간 (ms)                                        |
 
-
+<br>
+ 
 ### 🔁 Voice-based Optimistic Update Flow
 **1.** 음성 인식 시작  
 **2.** USER 메시지를 빈 content로 캐시에 즉시 삽입  
@@ -373,6 +525,8 @@ const {
 | :---------------: | :---------------: |
 | **LoadingSpinner** | **SendingDots** |
 
+<br>
+ 
 ### Usage
 ```tsx
 <LoadingSpinner size="lg" />
@@ -381,6 +535,8 @@ const {
 <SendingDots size="lg" />
 ```
 
+<br>
+ 
 ### Props
 | name   | type                           | required | description |
 | ------ | ------------------------------ |-----| ----------- |
@@ -398,6 +554,8 @@ const {
 | :---------------: | :---------------: |
 | **role="AI"** | **role="USER"** |
 
+<br>
+ 
 ### Usage
 ```tsx
 <ChatMessage
@@ -420,6 +578,8 @@ const {
 />
 ```
 
+<br>
+ 
 ### Props
 | name | type | required | description |
 | ----------------- | ----------------------------- | --------------- | --------------- |
@@ -437,7 +597,6 @@ const {
 | `position` | `"auto" \| "left" \| "right"` | ❌ | 말풍선 위치 설정 |
 | `loadingRenderer` | `React.ReactNode` | ❌ | 로딩 상태 시 렌더링할 커스텀 UI<br>(<code>default</code>: \<LoadingSpinner/>) |
 
-
 <br>
 
 <h2 id="chatlist">🎨 ChatList</h2>
@@ -450,6 +609,8 @@ const {
 | :---------------: | 
 | **ChatList** |
 
+<br>
+ 
 ### Usage
 ```tsx
 // 이미 Message 타입으로 정규화된 데이터를 사용하는 경우
@@ -476,6 +637,8 @@ const {
 />
 ```
 
+<br>
+ 
 ### Props
 | name              | type                                     | required | description                         |
 | ----------------- | ---------------------------------------- | -------- | ----------------------------------- |
@@ -484,7 +647,6 @@ const {
 | `messageRenderer` | `(msg: Message) => React.ReactNode`      | ❌        | 기본 `ChatMessage` 대신 사용할 커스텀 메시지 렌더러 |
 | `className`       | `string`                                 | ❌        | 메시지 리스트 wrapper 커스텀 클래스             |
 | `loadingRenderer` | `React.ReactNode`                        | ❌        | AI 메시지의 로딩 상태에 전달할 커스텀 로딩 UI<br>(<code>default</code>: \<LoadingSpinner/>)        |
-
 
 <br>
 
@@ -502,6 +664,8 @@ const {
 | :---------------: | 
 | **ChatInput** |
 
+<br>
+ 
 ### Usage
 ```tsx
 <ChatInput
@@ -512,6 +676,8 @@ const {
 />
 ```
 
+<br>
+ 
 ### Props
 | name              | type                                       | required | description                   |
 | ----------------- | ------------------------------------------ | -------- | ----------------------------- |
@@ -529,7 +695,6 @@ const {
 | `value`           | `string`                                   | ❌        | 컨트롤드 모드 입력값                   |
 | `onChange`        | `(value: string) => void`                  | ❌        | 컨트롤드 모드 입력 변경 핸들러             |
 | `submitOnEnter`   | `boolean`                                  | ❌        | Enter 키로 전송할지 여부              |
-
 
 <br>
 
@@ -550,6 +715,8 @@ const {
 - 스크롤 최상단 도달 시 과거 메시지 페이지 로딩
 - 하단에 도달하지 않은 상태에서는 "scroll to bottom" 버튼 노출
 
+<br>
+ 
 ### Usage
 ```tsx
 // 이미 Message 타입으로 정규화된 데이터를 사용하는 경우
@@ -582,6 +749,8 @@ const {
 />
 ```
 
+<br>
+ 
 ### Props
 | name                 | type                                       | required | description                         |
 | -------------------- | ------------------------------------------ | -------- | ----------------------------------- |
@@ -600,12 +769,12 @@ const {
 | `isFetchingNextPage` | `boolean`                                  | ❌        | 다음 페이지 로딩 상태                    |
 | `className`          | `string`                                   | ❌        | 전체 컨테이너 wrapper 커스텀 클래스             |
 
-
 <br>
 
 ## Design Philosophy
 
 <br>
+
 
 
 
