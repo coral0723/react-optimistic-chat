@@ -1,11 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import useBrowserSpeechRecognition from "../hooks/useBrowserSpeechRecognition";
-
-type VoiceRecognitionController = {
-  start: () => void;
-  stop: () => void;
-  isRecording: boolean;
-}
+import type { VoiceRecognition } from "../types/VoiceRecognition";
 
 type ButtonConfig = {
   className?: string;
@@ -17,7 +12,7 @@ type Props = {
   onSend: (value: string) => void | Promise<void>;
 
   /* true: 브라우저 음성 인식, false: 미사용 */
-  voice?: boolean | VoiceRecognitionController;
+  voice?: boolean | VoiceRecognition;
 
   /* placeholder 텍스트 */
   placeholder?: string;
