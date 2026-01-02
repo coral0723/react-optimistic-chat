@@ -452,12 +452,12 @@ const {
 
 ### Usage
 ```tsx
-// 기본 사용법
+// 이미 Message 타입으로 정규화된 데이터를 사용하는 경우
 <ChatList
   messages={messages}
 />
 
-// 메시지 필드 변환
+// 서버에서 내려오는 Raw 데이터를 사용하는 경우
 <ChatList
   messages={messages}
   messageMapper={(msg) => ({
@@ -479,7 +479,7 @@ const {
 ### Props
 | name              | type                                     | required | description                         |
 | ----------------- | ---------------------------------------- | -------- | ----------------------------------- |
-| `messages`        | `Raw[]`                              | ✅        | 렌더링할 메시지 배열                         |
+| `messages`        | `Message[] \| Raw[]`                     | ✅        | 렌더링할 메시지 배열                         |
 | `messageMapper`   | `(msg: Raw) => Message`               | ❌        | Raw 데이터를 Message 구조로 매핑하는 함수    |
 | `messageRenderer` | `(msg: Message) => React.ReactNode`      | ❌        | 기본 `ChatMessage` 대신 사용할 커스텀 메시지 렌더러 |
 | `className`       | `string`                                 | ❌        | 메시지 리스트 wrapper 커스텀 클래스             |
@@ -518,7 +518,7 @@ const {
 | `onSend`          | `(value: string) => void \| Promise<void>` | ✅        | 메시지 전송 시 호출되는 콜백              |
 | `isSending`       | `boolean`                                  | ✅        | 메시지 전송 중 상태 여부                    |
 | `voice`           | `boolean \| VoiceRecognition`    | ❌        | 음성 인식 사용 여부 또는 커스텀 음성 인식 컨트롤러<br>(<code>default</code>: true) |
-| `placeholder`     | `string`                                   | ❌        | textarea placeholder 텍스트      |
+| `placeholder`     | `string`                                   | ❌        | 입력창 placeholder 텍스트      |
 | `className`       | `string`                                   | ❌        | 전체 wrapper 커스텀 클래스            |
 | `inputClassName`  | `string`                                   | ❌        | textarea 커스텀 클래스              |
 | `micButton`       | `{ className?: string; icon?: ReactNode }` | ❌        | 마이크 버튼 커스터마이징                 |
@@ -535,11 +535,78 @@ const {
 
 <h2 id="chatcontainer">🎨 ChatContainer</h2>
 
+<code>ChatContainer</code>는 **채팅 UI를 빠르게 구성하고 싶은 사용자를 위한 채팅 컨테이너 컴포넌트**입니다.  
+<code>ChatList</code>와 <code>ChatInput</code>을 내부에서 함께 렌더링하며,  
+<code>useChat</code>, <code>useVoiceChat</code>과 자연스럽게 결합할 수 있도록 설계되었습니다.  
+
+또한 <code>fetchNextPage</code>, <code>hasNextPage</code>, <code>isFetchingNextPage</code>를 props로 받아  
+스크롤을 최상단으로 올리면 과거 채팅 내역을 자동으로 로딩합니다.  
+
+| <img width="438" height="532" alt="Image" src="https://github.com/user-attachments/assets/b1713f34-419e-40cf-a79c-016c57145920" />|
+| :---------------: | 
+| **ChatContainer** |
+
+- 메시지 추가 시 스크롤이 하단에 고정됨
+- 스크롤 최상단 도달 시 과거 메시지 페이지 로딩
+- 하단에 도달하지 않은 상태에서는 "scroll to bottom" 버튼 노출
+
+### Usage
+```tsx
+// 이미 Message 타입으로 정규화된 데이터를 사용하는 경우
+<ChatContainer
+  messages={messages}
+  onSend={sendMessage}
+  isSending={isPending}
+/>
+
+// 서버에서 내려오는 Raw 데이터를 사용하는 경우
+<ChatContainer
+  messages={rawMessages}
+  messageMapper={(raw) => ({
+    id: raw.id,
+    role: raw.sender === "user" ? "USER" : "AI",
+    content: raw.text,
+  })}
+  onSend={sendMessage}
+  isSending={isPending}
+/>
+
+// useChat, useVoiceChat과 함께 사용하는 경우
+<ChatContainer
+  messages={messages}
+  onSend={sendMessage}
+  isSending={isPending}
+  fetchNextPage={fetchNextPage}
+  hasNextPage={hasNextPage}
+  isFetchingNextPage={isFetchingNextPage}
+/>
+```
+
+### Props
+| name                 | type                                       | required | description                         |
+| -------------------- | ------------------------------------------ | -------- | ----------------------------------- |
+| `messages`           | `Message[] \| Raw[]`                         | ✅        | 렌더링할 메시지 배열                         |
+| `onSend`             | `(value: string) => void \| Promise<void>` | ✅        | 메시지 전송 시 호출되는 콜백                    |
+| `isSending`          | `boolean`                                  | ✅        | 메시지 전송 중 상태 여부                      |
+| `messageMapper`      | `(msg: Raw) => Message`                      | ❌        | Raw 데이터를 `Message`구조로 매핑하는 함수         |
+| `messageRenderer`    | `(msg: Message) => React.ReactNode`        | ❌        | 기본 `ChatMessage` 대신 사용할 커스텀 메시지 렌더러 |
+| `loadingRenderer`    | `React.ReactNode`                          | ❌        | 메시지 로딩 상태에 사용할 커스텀 UI               |
+| `listClassName`      | `string`                                   | ❌        | `ChatList` wrapper 커스텀 클래스          |
+| `disableVoice`       | `boolean`                                  | ❌        | 음성 입력 기능 비활성화 여부                    |
+| `placeholder`        | `string`                                   | ❌        | 입력창 placeholder 텍스트                 |
+| `inputClassName`     | `string`                                   | ❌        | `ChatInput` 커스텀 클래스                 |
+| `fetchNextPage`      | `() => void`                               | ❌        | 다음 채팅 페이지를 요청하는 함수                   |
+| `hasNextPage`        | `boolean`                                  | ❌        | 다음 페이지 존재 여부                 |
+| `isFetchingNextPage` | `boolean`                                  | ❌        | 다음 페이지 로딩 상태                    |
+| `className`          | `string`                                   | ❌        | 전체 컨테이너 wrapper 커스텀 클래스             |
+
+
 <br>
 
 ## Design Philosophy
 
 <br>
+
 
 
 
