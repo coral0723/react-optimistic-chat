@@ -1,13 +1,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import type { BaseMessage, Message, MessageCore } from "../types/Message";
 import { useEffect, useRef, useState } from "react";
-
-type VoiceRecognitionController = {
-  start: () => void;
-  stop: () => void;
-  isRecording: boolean;
-  onTranscript: (text: string) => void;
-}
+import type { VoiceRecognition } from "../types/VoiceRecognition";
 
 /* Raw 데이터 중 Message에 매핑되지 않은 나머지 필드들 */
 type ExtractCustom<Raw> = Omit<Raw, keyof BaseMessage>;
@@ -35,7 +29,7 @@ type Options<Raw> = {
   map: (raw: Raw) => MessageCore
 
   /* 음성 입력을 제어하기 위한 컨트롤러(start / stop / transcript 연결) */
-  voice: VoiceRecognitionController;
+  voice: VoiceRecognition;
 
   /* mutation 에러가 발생한 경우 외부에서 처리하고 싶을 때 사용하는 콜백 */
   onError?: (error: unknown) => void;
