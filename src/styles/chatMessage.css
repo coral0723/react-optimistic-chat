@@ -1,7 +1,3 @@
-/* =========================
-   ChatMessage
-========================= */
-
 .roc-chat-message {
   display: flex;
   align-items: flex-start;
@@ -18,7 +14,6 @@
   justify-content: flex-end;
 }
 
-/* AI 아이콘 */
 .roc-chat-message__icon {
   width: 40px;
   height: 40px;
@@ -36,8 +31,6 @@
   display: block;
 }
 
-
-/* 말풍선 공통 */
 .roc-chat-message__bubble {
   padding: 0.75rem;
   max-width: calc(100% - 3rem);
@@ -50,13 +43,11 @@
   box-sizing: border-box;
 }
 
-/* AI 말풍선 */
 .roc-chat-message__bubble--ai {
   background-color: #f3f4f6;
   border-radius: 0.75rem;
 }
 
-/* User 말풍선 */
 .roc-chat-message__bubble--user {
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
