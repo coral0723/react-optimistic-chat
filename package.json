@@ -11,10 +11,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:css": "npx tailwindcss -i ./src/styles/style.css -o ./src/styles/style.css --minify",
-    "copy:css": "copy src\\styles\\style.css public\\style.css",
-    "build:lib": "tsup",
-    "build": "npm run build:css && npm run copy:css && npm run build:lib"
+    "build": "tsup"
   },
   "files": [
     "dist"
@@ -42,6 +39,6 @@
     }
   },
   "sideEffects": [
-    "./dist/style.css"
+    "*.css"
   ]
 }

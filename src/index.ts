@@ -1,5 +1,3 @@
-import "./styles/style.css";
-
 export type { Message } from './types/Message';
 export type { VoiceRecognition } from './types/VoiceRecognition';
 export { default as LoadingSpinner } from './components/indicators/LoadingSpinner';

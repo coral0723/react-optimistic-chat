@@ -7,5 +7,4 @@ export default defineConfig({
   splitting: false,
   sourcemap: false,
   clean: true,
-  publicDir: "public",
 });
