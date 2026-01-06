@@ -364,12 +364,44 @@ const {
 
 <br>
 
-### 🔁 Optimistic Update Flow
-**1.** 사용자가 메시지 전송  
-**2.** USER 메시지 + 로딩 중인 AI 메시지를 즉시 캐시에 삽입  
-**3.** AI 응답이 도착  
-**4.** 로딩 중인 AI 메시지를 실제 응답으로 교체  
-**5.** 에러 발생 시 이전 상태로 rollback  
+### 🔁 useChat Flow
+<table width="892" align="center" bgcolor="white">
+  <tr>
+    <td align="center" bgcolor="white">
+      <img
+        src="https://github.com/user-attachments/assets/6e61356b-0da3-45d9-8791-c11aa0d346e9"
+        width="690"
+        style="display: block; margin: 0 auto;"
+        alt="useChat 호출"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" bgcolor="white">
+      <b>useChat 호출</b>
+    </td>
+  </tr>
+</table>
+
+<table width="892" align="center" bgcolor="white">
+  <tr>
+    <td align="center" bgcolor="white">
+      <img
+        src="https://github.com/user-attachments/assets/10218350-8844-4bee-b78e-fe4564844e57"
+        width="690"
+        style="display: block; margin: 0 auto;"
+        alt="useChat 실행"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" bgcolor="white">
+      <b>useChat 실행</b>
+    </td>
+  </tr>
+</table>
+
+
 
 <br>
  
@@ -828,6 +860,7 @@ page[0] = [
 # 📄 License
 MIT License © 2025  
 See the [LICENSE](./LICENSE) file for details.
+
 
 
 
