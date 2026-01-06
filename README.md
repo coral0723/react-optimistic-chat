@@ -535,14 +535,42 @@ const {
 
 <br>
  
-### 🔁 Voice-based Optimistic Update Flow
-**1.** 음성 인식 시작  
-**2.** USER 메시지를 빈 content로 캐시에 즉시 삽입  
-**3.** 음성 인식 중간 결과를 실시간으로 메시지에 반영  
-**4.** 음성 인식 종료 + 로딩 중인 AI 메시지를 즉시 캐시에 삽입  
-**5.** 최종 transcript로 AI 요청 전송  
-**6.** AI placeholder 메시지를 실제 응답으로 교체  
-**7.** 에러 또는 빈 입력 시 이전 상태로 rollback  
+### 🔁 useVoiceChat Flow
+<table width="1001" align="center" bgcolor="white">
+  <tr>
+    <td align="center" bgcolor="white">
+      <img
+        src="https://github.com/user-attachments/assets/c80acf37-4886-4c36-a952-e629ccd73088"
+        width="690"
+        style="display: block; margin: 0 auto;"
+        alt="useVoiceChat 호출"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" bgcolor="white">
+      <b>useVoiceChat 호출</b>
+    </td>
+  </tr>
+</table>
+
+<table width="1001" align="center" bgcolor="white">
+  <tr>
+    <td align="center" bgcolor="white">
+      <img
+        src="https://github.com/user-attachments/assets/92b44439-5db4-474d-875e-8e62a09f157b"
+        width="690"
+        style="display: block; margin: 0 auto;"
+        alt="useVoiceChat 실행"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" bgcolor="white">
+      <b>useVoiceChat 실행</b>
+    </td>
+  </tr>
+</table>
 
 <br>
 
@@ -860,6 +888,7 @@ page[0] = [
 # 📄 License
 MIT License © 2025  
 See the [LICENSE](./LICENSE) file for details.
+
 
 
 
