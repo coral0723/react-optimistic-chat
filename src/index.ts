@@ -1,4 +1,5 @@
 import './styles/chatMessage.css';
+import './styles/chatList.css';
 
 export type { Message } from './types/Message';
 export type { VoiceRecognition } from './types/VoiceRecognition';
