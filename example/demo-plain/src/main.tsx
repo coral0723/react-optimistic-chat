@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import '../../../src/styles/chatMessage.css';
 import '../../../src/styles/chatList.css';
+import '../../../src/styles/chatInput.css';
 
 const queryClient = new QueryClient();
 

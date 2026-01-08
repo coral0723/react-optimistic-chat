@@ -177,11 +177,7 @@ export default function ChatInput({
   const activeLayer = getActivityLayer();
 
   return (
-    <div 
-      className={`
-        flex border border-gray-300 p-2 rounded-3xl
-        ${className}
-      `}>
+    <div className={`chat-input ${className}`}>
       <textarea
         ref={textareaRef}
         value={text}
@@ -189,13 +185,7 @@ export default function ChatInput({
         placeholder={placeholder}
         rows={1}
         onKeyDown={handleKeyDown}
-        className={`
-          w-full px-3 py-2
-          resize-none border-none
-          text-sm focus:outline-none
-          overflow-hidden chatinput-scroll
-          ${inputClassName}
-        `}
+        className={`chat-input__textarea ${inputClassName}`}
       />
       <button
         type="button" // submit 방지
@@ -205,17 +195,13 @@ export default function ChatInput({
             ? handleRecord
             : handleSend
         }
-        className="relative w-10 h-10 ml-2 mt-auto flex-shrink-0"
+        className="chat-input__button"
       >
         {/* mic layer */}
         <div
-          className={`
-            absolute inset-0 flex items-center justify-center rounded-3xl
-            transition-opacity duration-150
-            ${activeLayer === "mic" ? "opacity-100" : "opacity-0"}
-            bg-gray-100 text-gray-700
-            ${micButton?.className || ""}
-          `}
+          className={`chat-input__layer chat-input__layer--mic ${
+            activeLayer === "mic" ? "is-active" : ""
+          } ${micButton?.className || ""}`}
         >
           {micButton?.icon || (
             <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
@@ -228,13 +214,9 @@ export default function ChatInput({
 
         {/* recording layer */}
         <div
-          className={`
-            absolute inset-0 flex items-center justify-center rounded-3xl
-            transition-opacity duration-150
-            ${activeLayer === "recording" ? "opacity-100" : "opacity-0"}
-            bg-red-600 text-white
-            ${recordingButton?.className || ""}
-          `}
+          className={`chat-input__layer chat-input__layer--recording ${
+            activeLayer === "recording" ? "is-active" : ""
+          } ${recordingButton?.className || ""}`}
         >
           {recordingButton?.icon || (
             <svg width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
@@ -247,13 +229,9 @@ export default function ChatInput({
 
         {/* send layer */}
         <div
-          className={`
-            absolute inset-0 flex items-center justify-center rounded-3xl
-            transition-opacity duration-150
-            ${activeLayer === "send" ? "opacity-100" : "opacity-0"}
-            bg-black text-white
-            ${sendButton?.className || ""}
-          `}
+          className={`chat-input__layer chat-input__layer--send ${
+            activeLayer === "send" ? "is-active" : ""
+          } ${sendButton?.className || ""}`}
         >
           {sendButton?.icon || (
             <svg 
@@ -272,13 +250,9 @@ export default function ChatInput({
 
         {/* sending layer */}
         <div
-          className={`
-            absolute inset-0 flex items-center justify-center rounded-3xl
-            transition-opacity duration-150
-            ${activeLayer === "sending" ? "opacity-100" : "opacity-0"}
-            bg-gray-400 text-white
-            ${sendingButton?.className || ""}
-          `}
+          className={`chat-input__layer chat-input__layer--sending ${
+            activeLayer === "sending" ? "is-active" : ""
+          } ${sendingButton?.className || ""}`}
         >
           {sendingButton?.icon || (
             <svg 
