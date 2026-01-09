@@ -100,7 +100,7 @@ export default function ChatContainerPG() {
       )}
 
       <ChatContainer
-        className="h-[80vh]"      
+        className="max-h-[80vh]"      
         messages={messages}
         loadingRenderer={<SendingDots/>}
         messageRenderer={(msg) => (
