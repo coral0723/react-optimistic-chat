@@ -37,7 +37,7 @@ export default function ChatList<Raw>({
     : (messages as unknown as Message[]);
 
   return (
-    <div className={`chat-list ${className ?? ""}`}>
+    <div className={`roc-chat-list ${className ?? ""}`}>
       {mappedMessages.map((msg) => {
         /*
         사용자가 messageRenderer를 제공했다면

@@ -177,7 +177,7 @@ export default function ChatInput({
   const activeLayer = getActivityLayer();
 
   return (
-    <div className={`chat-input ${className}`}>
+    <div className={`roc-chat-input ${className}`}>
       <textarea
         ref={textareaRef}
         value={text}
@@ -185,7 +185,7 @@ export default function ChatInput({
         placeholder={placeholder}
         rows={1}
         onKeyDown={handleKeyDown}
-        className={`chat-input__textarea ${inputClassName}`}
+        className={`roc-chat-input__textarea ${inputClassName}`}
       />
       <button
         type="button" // submit 방지
@@ -195,11 +195,11 @@ export default function ChatInput({
             ? handleRecord
             : handleSend
         }
-        className="chat-input__button"
+        className="roc-chat-input__button"
       >
         {/* mic layer */}
         <div
-          className={`chat-input__layer chat-input__layer--mic ${
+          className={`roc-chat-input__layer roc-chat-input__layer--mic ${
             activeLayer === "mic" ? "is-active" : ""
           } ${micButton?.className || ""}`}
         >
@@ -214,7 +214,7 @@ export default function ChatInput({
 
         {/* recording layer */}
         <div
-          className={`chat-input__layer chat-input__layer--recording ${
+          className={`roc-chat-input__layer roc-chat-input__layer--recording ${
             activeLayer === "recording" ? "is-active" : ""
           } ${recordingButton?.className || ""}`}
         >
@@ -229,7 +229,7 @@ export default function ChatInput({
 
         {/* send layer */}
         <div
-          className={`chat-input__layer chat-input__layer--send ${
+          className={`roc-chat-input__layer roc-chat-input__layer--send ${
             activeLayer === "send" ? "is-active" : ""
           } ${sendButton?.className || ""}`}
         >
@@ -250,7 +250,7 @@ export default function ChatInput({
 
         {/* sending layer */}
         <div
-          className={`chat-input__layer chat-input__layer--sending ${
+          className={`roc-chat-input__layer roc-chat-input__layer--sending ${
             activeLayer === "sending" ? "is-active" : ""
           } ${sendingButton?.className || ""}`}
         >

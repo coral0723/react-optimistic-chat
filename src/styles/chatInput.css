@@ -1,11 +1,11 @@
-.chat-input {
+.roc-chat-input {
   display: flex;
   border: 1px solid #d1d5db;
   padding: 8px 8px;
   border-radius: 24px;
 }
 
-.chat-input__textarea {
+.roc-chat-input__textarea {
   width: 100%;
   resize: none;
   border: none;
@@ -17,7 +17,7 @@
   padding-left: 8px;
 }
 
-.chat-input__textarea::placeholder {
+.roc-chat-input__textarea::placeholder {
   color: #9ca3af;
   font-family: 
     -apple-system,
@@ -30,7 +30,7 @@
     sans-serif;
 }
 
-.chat-input__button {
+.roc-chat-input__button {
   position: relative;
   width: 36px;
   height: 36px;
@@ -42,7 +42,7 @@
   cursor: pointer;
 }
 
-.chat-input__layer {
+.roc-chat-input__layer {
   position: absolute;
   inset: 0;
   display: flex;
@@ -53,26 +53,26 @@
   transition: opacity 150ms ease;
 }
 
-.chat-input__layer.is-active {
+.roc-chat-input__layer.is-active {
   opacity: 1;
 }
 
-.chat-input__layer--mic {
+.roc-chat-input__layer--mic {
   background: #f3f4f6;
   color: #374151;
 }
 
-.chat-input__layer--recording {
+.roc-chat-input__layer--recording {
   background: #dc2626;
   color: #ffffff;
 }
 
-.chat-input__layer--send {
+.roc-chat-input__layer--send {
   background: #000000;
   color: #ffffff;
 }
 
-.chat-input__layer--sending {
+.roc-chat-input__layer--sending {
   background: #9ca3af;
   color: #ffffff;
 }

@@ -123,13 +123,13 @@ export default function ChatContainer<Raw>(props: Props<Raw>) {
   
   return (
     <>
-      <div className={`chat-container ${className || ""}`}>
+      <div className={`roc-chat-container ${className || ""}`}>
         <div 
           ref={scrollRef}
-          className="chat-container__list"
+          className="roc-chat-container__list"
         >
           {hasNextPage && isFetchingNextPage && (
-            <div className="chat-container__loading">
+            <div className="roc-chat-container__loading">
               <LoadingSpinner size="sm"/>
             </div>
           )}
@@ -141,10 +141,10 @@ export default function ChatContainer<Raw>(props: Props<Raw>) {
           />
         </div>
 
-        <div className="chat-container__input">
+        <div className="roc-chat-container__input">
           {!isAtBottom && (
             <button
-              className="chat-container__scroll-button"
+              className="roc-chat-container__scroll-button"
               onClick={scrollToBottom}
               aria-label="scroll to bottom"
             >

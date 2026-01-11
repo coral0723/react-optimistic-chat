@@ -1,27 +1,27 @@
-.chat-container {
+.roc-chat-container {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.chat-container__list {
+.roc-chat-container__list {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
 }
 
-.chat-container__loading {
+.roc-chat-container__loading {
   display: flex;
   justify-content: center;
   padding: 8px 0;
 }
 
-.chat-container__input {
+.roc-chat-container__input {
   position: relative;
   flex-shrink: 0;
 }
 
-.chat-container__scroll-button {
+.roc-chat-container__scroll-button {
   position: absolute;
   bottom: 80px;
   left: 50%;
