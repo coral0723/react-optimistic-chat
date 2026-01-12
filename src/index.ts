@@ -2,6 +2,7 @@ import './styles/chatMessage.css';
 import './styles/chatList.css';
 import './styles/chatInput.css';
 import './styles/chatContainer.css';
+import './styles/loadingSpinner.css';
 
 export type { Message } from './types/Message';
 export type { VoiceRecognition } from './types/VoiceRecognition';
