@@ -15,6 +15,7 @@ import '../../../src/styles/chatList.css';
 import '../../../src/styles/chatInput.css';
 import '../../../src/styles/chatContainer.css';
 import '../../../src/styles/loadingSpinner.css';
+import '../../../src/styles/sendingDots.css';
 
 const queryClient = new QueryClient();
 
