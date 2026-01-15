@@ -123,17 +123,13 @@ export default function ChatContainer<Raw>(props: Props<Raw>) {
   
   return (
     <>
-      <div
-        className={`
-          flex flex-col ${className || ""}
-        `}  
-      >
+      <div className={`roc-chat-container ${className || ""}`}>
         <div 
           ref={scrollRef}
-          className={`flex-1 overflow-y-auto chatContainer-scroll p-2`}
+          className="roc-chat-container__list"
         >
           {hasNextPage && isFetchingNextPage && (
-            <div className="flex justify-center py-2">
+            <div className="roc-chat-container__loading">
               <LoadingSpinner size="sm"/>
             </div>
           )}
@@ -145,16 +141,11 @@ export default function ChatContainer<Raw>(props: Props<Raw>) {
           />
         </div>
 
-        <div className="flex-shrink-0 relative">
+        <div className="roc-chat-container__input">
           {!isAtBottom && (
             <button
+              className="roc-chat-container__scroll-button"
               onClick={scrollToBottom}
-              className="
-                absolute bottom-20 left-1/2 -translate-x-1/2
-                w-10 h-10 rounded-full bg-white font-bold
-                flex items-center justify-center
-                border-gray-200 border-[1px]
-              "
               aria-label="scroll to bottom"
             >
               <svg xmlns="http://www.w3.org/2000/svg" 

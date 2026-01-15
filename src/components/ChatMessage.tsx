@@ -49,17 +49,15 @@ export default function ChatMessage({
   const justify =
     position === "auto"
       ? isAI
-        ? "justify-start"
-        : "justify-end"
-      : position === "left"
-      ? "justify-start"
-      : "justify-end";
+        ? "left"
+        : "right"
+      : position;
 
   // 기본 AI 아이콘
   const defaultAIIcon = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className={`${aiIconColor}`}
+      className={aiIconColor}
       width="24"
       height="24"
       viewBox="0 0 24 24"
@@ -79,13 +77,19 @@ export default function ChatMessage({
   );
 
   return (
-    <div key={id} className={`flex mb-4 items-start ${justify} ${wrapperClassName}`}>
-      
+    <div
+      key={id}
+      className={`
+        roc-chat-message
+        roc-chat-message--${justify}
+        ${wrapperClassName}
+      `}
+    >
       {/* AI 아이콘 */}
       {isAI && (
         <div
           className={`
-            mr-2 bg-gray-100 rounded-full p-2 border-2 border-black
+            roc-chat-message__icon
             ${aiIconWrapperClassName}
           `}
         >
@@ -97,20 +101,15 @@ export default function ChatMessage({
       {/* 말풍선 */}
       <div
         className={`
-          py-3 px-3 max-h-96 overflow-y-auto w-fit max-w-[calc(100%-3rem)]
-          whitespace-pre-wrap break-words text-sm
-          ${
-            isAI
-              ? `bg-gray-100 border-gray-200 rounded-b-xl rounded-t-xl ${aiBubbleClassName}`
-              : `bg-white border border-gray-200 rounded-b-xl rounded-tl-xl ${userBubbleClassName}`
-          }
+          roc-chat-message__bubble
+          ${isAI ? "roc-chat-message__bubble--ai" : "roc-chat-message__bubble--user"}
+          ${isAI ? aiBubbleClassName : userBubbleClassName}
           ${bubbleClassName}
         `}
       >
-        {isLoading 
-          ? loadingRenderer ?? <LoadingSpinner size="xs"/>
-          : content
-        }
+        {isLoading
+          ? loadingRenderer ?? <LoadingSpinner size="xs" />
+          : content}
       </div>
     </div>
   );

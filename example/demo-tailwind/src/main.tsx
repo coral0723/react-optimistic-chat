@@ -10,7 +10,12 @@ import './index.css'
 import App from './App.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import '../../../public/style.css';
+import '../../../src/styles/chatMessage.css';
+import '../../../src/styles/chatList.css';
+import '../../../src/styles/chatInput.css';
+import '../../../src/styles/chatContainer.css';
+import '../../../src/styles/loadingSpinner.css';
+import '../../../src/styles/sendingDots.css';
 
 const queryClient = new QueryClient();
 

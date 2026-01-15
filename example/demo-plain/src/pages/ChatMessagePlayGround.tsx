@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ChatMessage from "../../../../src/components/ChatMessage";
+import "./styles/chatMessagePlayGround.css";
 
 export default function ChatMessagePlayGround() {
   const [isLoading, setIsLoading] = useState(false);

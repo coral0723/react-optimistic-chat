@@ -1,0 +1,17 @@
+.roc-sending-dots {
+  display:inline-flex;
+  justify-content:space-between;
+  align-items:center
+}
+
+.roc-sending-dot {
+  font-weight:800;
+  line-height:1;
+  animation:roc-sending-bounce 1.4s ease-in-out infinite
+}
+
+@keyframes roc-sending-bounce {
+  0%,
+  to{opacity:.2;transform:translateY(0)}
+  50%{opacity:1;transform:translateY(-2px)}
+}
