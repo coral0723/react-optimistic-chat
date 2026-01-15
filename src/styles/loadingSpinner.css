@@ -1,0 +1,18 @@
+.roc-spinner-wrapper {
+  display:flex;
+  align-items:center;
+  justify-content:center
+}
+
+.roc-spinner { 
+  border:4px solid #e5e7eb;
+  border-right-color:transparent;
+  border-radius:50%;
+  animation:roc-spin 1s linear infinite
+}
+
+@keyframes roc-spin {
+  to {
+    transform:rotate(1turn)
+  }
+}
