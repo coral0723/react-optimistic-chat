@@ -58,17 +58,6 @@ yarn add react-optimistic-chat
 
 <br>
 
-## styles
-<code>react-optimistic-chat</code>의 **채팅 UI 컴포넌트**를 사용하려면  
-아래 스타일 파일을 반드시 import 해야 합니다.
-```ts
-import "react-optimistic-chat/style.css";
-```
-> React 프로젝트에서는 `App.tsx`에,  
-> Next.js(App Router)에서는 루트 `Layout.tsx`에서 import 하는 것을 권장합니다.
-
-<br>
-
 <h1 id="quick-start">🚀 Quick Start</h1>
 
 아래 예제는 서버로부터 전달되는 Raw 채팅 데이터를  
@@ -888,6 +877,7 @@ page[0] = [
 # 📄 License
 MIT License © 2025  
 See the [LICENSE](./LICENSE) file for details.
+
 
 
 
