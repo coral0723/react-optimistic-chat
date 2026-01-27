@@ -1,3 +1,5 @@
+"use client"
+
 import type { Message } from "../types/Message";
 import LoadingSpinner from "./indicators/LoadingSpinner";
 import React from "react";
