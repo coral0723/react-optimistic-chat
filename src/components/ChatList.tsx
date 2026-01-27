@@ -1,3 +1,5 @@
+"use client"
+
 import type { Message } from "../types/Message";
 import React from "react";
 import ChatMessage from "./ChatMessage";

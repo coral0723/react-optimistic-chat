@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useRef, useEffect } from "react";
 import useBrowserSpeechRecognition from "../hooks/useBrowserSpeechRecognition";
 import type { VoiceRecognition } from "../types/VoiceRecognition";

@@ -1,3 +1,5 @@
+"use client"
+
 type Size = 'xs' | 'sm' | 'md' | 'lg';
 
 type Props = {
