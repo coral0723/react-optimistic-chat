@@ -1,9 +1,70 @@
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import type { BaseMessage, Message, MessageCore } from "../types/Message";
+import type { Message, MessageCore } from "../types/Message";
 import { useState } from "react";
 
-/* Raw 데이터 중 Message에 매핑되지 않은 나머지 필드들 */
-type ExtractCustom<Raw> = Omit<Raw, keyof BaseMessage>;
+/* =========================
+ * 내부 전용 타입 & 유틸
+ * ========================= */
+
+// map 설계 결과
+type InternalMapResult<Raw extends object> = {
+  core: MessageCore;
+  usedKeys: readonly (keyof Raw)[];
+}
+
+// Raw에서 map이 소비한 필드를 제거해 custom 영역으로 계산
+type CustomFromKeys<Raw, K extends readonly (keyof Raw)[]> = Omit<Raw, K[number]>;
+
+// 사용자가 제공한 map을 실행해 내부 설계 정보로 승격
+function runMap<Raw extends object>(
+  raw: Raw,
+  map: (raw: Raw) => MessageCore
+): InternalMapResult<Raw> {
+  const core = map(raw);
+
+  // Raw 기준으로 core에 사용된 필드 추론
+  const usedKeys = Object.keys(raw).filter((key) => 
+    Object.values(core).includes((raw as any)[key])
+  ) as (keyof Raw)[];
+
+  return { core, usedKeys };
+}
+
+// InternalMapResult를 기반으로 최종 Message 생성
+function buildMessage<
+  Raw extends object,
+  K extends readonly (keyof Raw)[]
+>(
+  raw: Raw,
+  result: {
+    core: MessageCore,
+    usedKeys: K
+  }
+): Message<CustomFromKeys<Raw, K>> {
+  const custom = {} as CustomFromKeys<Raw, K>;
+
+  for (const key in raw) {
+    if (!result.usedKeys.includes(key as K[number])) {
+      (custom as any)[key] = raw[key];
+    }
+  }
+
+  // 위 코드의 "as any" 최소화 버전
+  // for (const key of Object.keys(raw) as (keyof Raw)[]) {
+  //   if (!result.usedKeys.includes(key as K[number])) {
+  //     custom[key as Exclude<keyof Raw, K[number]>] = raw[key];
+  //   }
+  // }
+
+  return {
+    ...result.core,
+    custom,
+  };
+}
+
+/* =========================
+ * Public API
+ * ========================= */
 
 type Options<Raw> = {
   /* 해당 채팅의 queryKey */
@@ -17,8 +78,8 @@ type Options<Raw> = {
   
   /* 다음 페이지를 가져오기 위한 pageParam 계산 함수 */
   getNextPageParam: (
-    lastPage: Message<ExtractCustom<Raw>>[],
-    allPages: Message<ExtractCustom<Raw>>[][]
+    lastPage: Message<any>[],
+    allPages: Message<any>[][]
   ) => unknown;
 
   /* 유저 입력(content)을 넘겨서 AI응답 1개를 받아오는 함수 */
@@ -33,30 +94,6 @@ type Options<Raw> = {
   staleTime?: number;
   gcTime?: number;
 };
-
-/* 
-Raw 데이터와 map 결과를 분리하여
-map에 사용된 필드는 Message 최상위에 유지하고
-나머지 Raw 필드는 custom 객체로 수집하는 함수
-*/
-function splitRawToMessage<Raw extends object>(
-  raw: Raw,
-  mapped: MessageCore
-): Message<ExtractCustom<Raw>> {
-  const custom = {} as ExtractCustom<Raw>;
-  const mappedValues = new Set(Object.values(mapped));
-
-  for (const [key, value] of Object.entries(raw)) {
-    if (!mappedValues.has(value)) {
-      (custom as any)[key] = value;
-    }
-  }
-
-  return {
-    ...mapped,
-    custom
-  };
-}
 
 export default function useChat<Raw extends object>({ 
   queryKey, 
@@ -79,14 +116,14 @@ export default function useChat<Raw extends object>({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery<Message<ExtractCustom<Raw>>[]>({
+  } = useInfiniteQuery<Message<any>[]>({
     queryKey,
     initialPageParam,
     queryFn: async ({ pageParam }) => {
-      const raw = await queryFn(pageParam);
-      return raw.map((r) => {
-        const mapped = map(r);
-        return splitRawToMessage(r, mapped);
+      const rawList = await queryFn(pageParam);
+      return rawList.map((raw) => {
+        const mapped = runMap(raw, map);
+        return buildMessage(raw, mapped);
       });
     },
     getNextPageParam,
@@ -94,19 +131,19 @@ export default function useChat<Raw extends object>({
     gcTime,
   });
 
-  const messages: Message<ExtractCustom<Raw>>[] = data ? [...data.pages].reverse().flat() : [];
+  const messages: Message<any>[] = data ? [...data.pages].reverse().flat() : [];
 
   const mutation = useMutation<
     Raw, 
     unknown, 
     string, 
-    { prev?: InfiniteData<Message<ExtractCustom<Raw>>[]> }
+    { prev?: InfiniteData<Message<any>[]> }
   >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
     onMutate: async (content) => {
       setIsPending(true);
 
-      const prev = queryClient.getQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey);
+      const prev = queryClient.getQueryData<InfiniteData<Message<any>[]>>(queryKey);
       
       // 조건부 cancleQueries
       if (prev) {
@@ -114,7 +151,7 @@ export default function useChat<Raw extends object>({
       }
 
       // query cache에 optimistic message를 직접 삽입
-      queryClient.setQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey, (old) => {
+      queryClient.setQueryData<InfiniteData<Message<any>[]>>(queryKey, (old) => {
         if (!old) return old;
 
         const pages = [...old.pages];
@@ -127,14 +164,14 @@ export default function useChat<Raw extends object>({
             role: "USER",
             content,
             custom: {}
-          } as Message<ExtractCustom<Raw>>,
+          } as Message<any>,
           {
             id: crypto.randomUUID(),
             role: "AI",
             content: "",
             isLoading: true,
             custom: {}
-          } as Message<ExtractCustom<Raw>>,
+          } as Message<any>,
         ];
 
         return {
@@ -148,10 +185,10 @@ export default function useChat<Raw extends object>({
     },
     onSuccess: (rawAiResponse) => { 
       // 서버의 응답을 Message로 변환
-      const mapped = map(rawAiResponse);
-      const aiMessage = splitRawToMessage(rawAiResponse, mapped);
+      const mapped = runMap(rawAiResponse, map);
+      const aiMessage = buildMessage(rawAiResponse, mapped);
 
-      queryClient.setQueryData<InfiniteData<Message<ExtractCustom<Raw>>[]>>(queryKey, (old) => {
+      queryClient.setQueryData<InfiniteData<Message<any>[]>>(queryKey, (old) => {
         if (!old) return old;
 
         const pages = [...old.pages];
