@@ -22,7 +22,8 @@ export const handlers = [
           {
             chatId: `1${randomBoolean()}`, 
             sender: "user", 
-            body: "안녕하세요!"
+            body: "안녕하세요!",
+            timestamp: "1222",
           }, 
           {
             chatId: `2${randomBoolean()}`, 

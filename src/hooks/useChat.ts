@@ -6,20 +6,33 @@ import { useState } from "react";
  * 내부 전용 타입 & 유틸
  * ========================= */
 
-// map 설계 결과
-type InternalMapResult<Raw extends object> = {
+/* 
+Raw 타입에서 MessageCore에 매핑된 필드를 제외한 나머지 필드 타입
+-> 최종 Message의 custom 영역에 들어갈 타입을 의미 
+*/
+type Custom<Raw> = Omit<Raw, keyof MessageCore>;
+
+/*
+runMap 실행 결과값 
+- core: Raw를 MessageCore 형태로 변환한 결과
+- usedKeys: MessageCore로 매핑하는 과정에서 Raw에서 실제로 사용된 key 목록
+*/
+type MapResult<Raw extends Record<string, unknown>> = {
   core: MessageCore;
-  usedKeys: readonly (keyof Raw)[];
+  usedKeys: readonly (keyof Raw)[];  // Raw의 매핑된 key들만 담는 배열
 }
 
-// 사용자가 제공한 map을 실행해 내부 설계 정보로 승격
+/*
+Raw 데이터를 MessageCore로 변환하고,
+Raw의 어떤 key가 매핑에 사용되었는지 추론
+*/
 function runMap<Raw extends Record<string, unknown>>(
   raw: Raw,
   map: (raw: Raw) => MessageCore
-): InternalMapResult<Raw> {
+): MapResult<Raw> {
   const core = map(raw);
 
-  // Raw 기준으로 core에 사용된 필드 추론
+  // Raw 기준으로 매핑에 사용된 key 추론
   const usedKeys = (Object.keys(raw) as (keyof Raw)[]).filter((key) => 
     (Object.values(core) as unknown[]).includes(raw[key])
   );
@@ -27,23 +40,28 @@ function runMap<Raw extends Record<string, unknown>>(
   return { core, usedKeys };
 }
 
-// buildMessage의 반환 타입
-type InferMessage<Raw extends Record<string, unknown>> =
-  Message<Omit<Raw, keyof MessageCore>>;
-
-// InternalMapResult를 기반으로 최종 Message 생성
+/*
+MapResult를 기반으로 최종 Message 객체 생성
+- core: MessageCore 필드
+- custom: Raw에서 매핑에 사용되지 않은 나머지 필드들
+*/
 function buildMessage<
   Raw extends Record<string, unknown>,
 >(
   raw: Raw,
-  result: InternalMapResult<Raw>
-): InferMessage<Raw> {
-  const custom = {} as Omit<Raw, keyof MessageCore>;
+  result: MapResult<Raw>
+): Message<Custom<Raw>> {
+  const custom = {} as Custom<Raw>;
 
-  for (const key of Object.keys(raw) as (keyof Raw)[]) {
-    if (!(key in result.core)) {
+  /*
+  Raw의 모든 key를 순회하면서,
+  usedKeys에 포함되지 않은 key만 custom에 추가
+  */
+  for (const key of Object.keys(raw) as (keyof Raw)[]) { 
+    // 매핑되지 않은 key라면 custom에 해당 필드 추가
+    if (!result.usedKeys.includes(key)) { 
       custom[key as Exclude<keyof Raw, keyof MessageCore>] =
-        raw[key] as Omit<Raw, keyof MessageCore>[Exclude<keyof Raw, keyof MessageCore>];
+        raw[key] as Custom<Raw>[Exclude<keyof Raw, keyof MessageCore>];
     }
   }
 
@@ -69,8 +87,8 @@ type Options<Raw extends Record<string, unknown>> = {
   
   /* 다음 페이지를 가져오기 위한 pageParam 계산 함수 */
   getNextPageParam: (
-    lastPage: InferMessage<Raw>[],
-    allPages: InferMessage<Raw>[][]
+    lastPage: Message<Custom<Raw>>[],
+    allPages: Message<Custom<Raw>>[][]
   ) => unknown;
 
   /* 유저 입력(content)을 넘겨서 AI응답 1개를 받아오는 함수 */
@@ -107,7 +125,7 @@ export default function useChat<Raw extends Record<string, unknown>>({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery<InferMessage<Raw>[]>({
+  } = useInfiniteQuery<Message<Custom<Raw>>[]>({
     queryKey,
     initialPageParam,
     queryFn: async ({ pageParam }) => {
@@ -122,19 +140,19 @@ export default function useChat<Raw extends Record<string, unknown>>({
     gcTime,
   });
 
-  const messages: InferMessage<Raw>[] = data ? [...data.pages].reverse().flat() : [];
+  const messages: Message<Custom<Raw>>[] = data ? [...data.pages].reverse().flat() : [];
 
   const mutation = useMutation<
     Raw, 
     unknown, 
     string, 
-    { prev?: InfiniteData<InferMessage<Raw>[]> }
+    { prev?: InfiniteData<Message<Custom<Raw>>[]> }
   >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
     onMutate: async (content) => {
       setIsPending(true);
 
-      const prev = queryClient.getQueryData<InfiniteData<InferMessage<Raw>[]>>(queryKey);
+      const prev = queryClient.getQueryData<InfiniteData<Message<Custom<Raw>>[]>>(queryKey);
       
       // 조건부 cancleQueries
       if (prev) {
@@ -142,7 +160,7 @@ export default function useChat<Raw extends Record<string, unknown>>({
       }
 
       // query cache에 optimistic message를 직접 삽입
-      queryClient.setQueryData<InfiniteData<InferMessage<Raw>[]>>(queryKey, (old) => {
+      queryClient.setQueryData<InfiniteData<Message<Custom<Raw>>[]>>(queryKey, (old) => {
         if (!old) return old;
 
         const pages = [...old.pages];
@@ -155,14 +173,14 @@ export default function useChat<Raw extends Record<string, unknown>>({
             role: "USER",
             content,
             custom: {}
-          } as InferMessage<Raw>,
+          } as Message<Custom<Raw>>,
           {
             id: crypto.randomUUID(),
             role: "AI",
             content: "",
             isLoading: true,
             custom: {}
-          } as InferMessage<Raw>,
+          } as Message<Custom<Raw>>,
         ];
 
         return {
@@ -179,7 +197,7 @@ export default function useChat<Raw extends Record<string, unknown>>({
       const mapped = runMap(rawAiResponse, map);
       const aiMessage = buildMessage(rawAiResponse, mapped);
 
-      queryClient.setQueryData<InfiniteData<InferMessage<Raw>[]>>(queryKey, (old) => {
+      queryClient.setQueryData<InfiniteData<Message<Custom<Raw>>[]>>(queryKey, (old) => {
         if (!old) return old;
 
         const pages = [...old.pages];

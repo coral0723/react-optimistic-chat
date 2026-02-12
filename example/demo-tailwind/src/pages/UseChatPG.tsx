@@ -8,6 +8,7 @@ type Raw = {
   chatId: string;
   sender: "ai" | "user";
   body: string;
+  timestamp: string;
   end?: boolean;
 }
 
