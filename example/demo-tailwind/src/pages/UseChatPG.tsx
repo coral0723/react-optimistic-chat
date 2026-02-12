@@ -52,7 +52,7 @@ export default function UseChatPG() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = useChat<Raw>({
+  } = useChat({
     queryKey: ["chat", roomId],
     queryFn: (pageParam) => getChat(roomId, pageParam as number),
     initialPageParam: 0,
@@ -67,11 +67,14 @@ export default function UseChatPG() {
         throw new Error("강제 에러 발생 테스트");
       return sendAI(content);
     },
-    map: (raw) => ({
-      id: raw.chatId,
-      role: raw.sender === "ai" ? "AI" : "USER",
-      content: raw.body,
-    }),
+    map: {
+      id: "chatId",
+      role: "sender",
+      content: "body",
+    },
+    roleResolver: (sender) => {
+      return sender === "ai" ? "AI" : "USER"
+    },
     onError: (err) => {
       console.error(err);
       setErrorMessage("전송 중 오류가 발생했습니다.");
@@ -80,7 +83,7 @@ export default function UseChatPG() {
     gcTime: 60 * 10000
   });
 
-  const lastMessageEnd = messages[messages.length - 1]?.custom!.end ? true : false;
+  const lastMessageEnd = messages[messages.length - 1]?.custom?.end ? true : false;
 
   return (
     <div className="max-w-xl mx-auto flex flex-col gap-4 p-4">
