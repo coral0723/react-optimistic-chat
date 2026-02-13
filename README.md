@@ -92,7 +92,8 @@ async function getChat(roomId: string, page: number): Promise<Raw[]> {
   const json = await res.json();
   return json.result;
 }
-
+```
+```ts
 async function sendAI(content: string): Promise<Raw> {
   const res = await fetch(`/sendAI`, {
     method: "POST",
@@ -116,7 +117,10 @@ async function sendAI(content: string): Promise<Raw> {
 <code>ChatContainer</code> 컴포넌트에 전달해 채팅 UI + 무한 스크롤을 구성합니다.  
 
 이때 서버의 Raw 데이터를 Message 타입의  
-<code>id</code>, <code>role</code>, <code>content</code> 필드에 **정확히 매핑**합니다.
+<code>id</code>, <code>role</code>, <code>content</code> 필드에 **키 기반으로 매핑**합니다.  
+
+- `keyMap`은 **어떤 Raw 필드가 Message의 필드에 대응되는지 선언**합니다.
+- `roleResolver`는 Raw의 role 값을 내부 표준 role 타입(`"AI" | "USER"`)으로 **정규화**합니다.  
 
 ```tsx
 export default function ChatExample() {
@@ -130,7 +134,7 @@ export default function ChatExample() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useChat<Raw>({
+  } = useChat({
     queryKey: ["chat", roomId],
     queryFn: (pageParam) => getChat(roomId, pageParam as number),
     initialPageParam: 0,
@@ -140,11 +144,14 @@ export default function ChatExample() {
 
     mutationFn: sendAI,
 
-    map: (raw) => ({
-      id: raw.chatId,
-      role: raw.sender === "ai" ? "AI" : "USER",
-      content: raw.body,
+    keyMap: {
+      id: "chatId",
+      role: "sender",
+      content: "body",
     }),
+    roleResolver: (sender) => {
+      return sender === "ai" ? "AI" : "USER"
+    },
   });
 
   return (
@@ -226,13 +233,17 @@ type Raw = {
 서버로부터 다음과 같은 <code>Raw</code> 채팅 데이터가 전달된다고 가정합니다.  
 
 ```ts
-map: (raw: RawMessage) => ({
-  id: raw.messageId,
-  role: raw.sender === "user" ? "USER" : "AI",
-  content: raw.text,
-});
+keyMap: {
+  id: "messageId",
+  role: "sender",
+  content: "text",
+},
+
+roleResolver: (sender) =>
+  sender === "user" ? "USER" : "AI",
+
 ```
-Hook에서 필수로 제공하는 <code>map</code> 함수를 다음과 같이 정의하면  
+Hook에서 필수로 제공하는 <code>keyMap</code>과 <code>roleResolver</code>를 다음과 같이 정의하면  
 
 ```ts
 {
@@ -315,11 +326,14 @@ const {
   initialPageParam: 0,
   getNextPageParam,
   mutationFn: sendAI,
-  map: (raw) => ({
-    id: raw.chatId,
-    role: raw.sender === "ai" ? "AI" : "USER",
-    content: raw.body,
-  }),
+  keyMap: {
+    id: "chatId",
+    role: "sender",
+    content: "body",
+  },
+  roleResolver: (sender) => {
+    return sender === "ai" ? "AI" : "USER"
+  }
 });
 ```
 
@@ -346,7 +360,8 @@ const {
 | `initialPageParam` | `unknown` | ✅ | 첫 페이지 요청 시 사용할 pageParam |
 | `getNextPageParam` | `(lastPage: Message[], allPages: Message[][]) => unknown` | ✅ | 다음 페이지 요청을 위한 pageParam 계산 함수 |
 | `mutationFn` | `(content: string) => Promise<Raw>` | ✅ | 유저 입력을 받아 AI 응답 1개를 반환하는 함수 |
-| `map` | `(raw: Raw) => { id; role; content }` | ✅ | Raw 데이터를 Message 구조로 매핑하는 함수 |
+| `keyMap` | `{ id: keyof Raw; role: keyof Raw; content: keyof Raw }` | ✅ | Raw 필드와 Message(id, role, content) 필드 간의 키 매핑 정의 |
+| `roleResolver` | `(value: Raw[KeyMap["role"]]) => "AI" \| "USER"` | ✅ | Raw의 role 값을 내부 표준 role 타입으로 정규화하는 함수 |
 | `onError` | `(error: unknown) => void` | ❌ | mutation 에러 발생 시 호출되는 콜백 |
 | `staleTime` | `number` | ❌ | 캐시가 fresh 상태로 유지되는 시간 (ms) |
 | `gcTime` | `number` | ❌ | 캐시가 GC 되기 전까지 유지되는 시간 (ms) |
@@ -484,11 +499,14 @@ const {
   initialPageParam: 0,
   getNextPageParam,
   mutationFn: sendAI,
-  map: (raw) => ({
-    id: raw.chatId,
-    role: raw.sender === "ai" ? "AI" : "USER",
-    content: raw.body,
-  }),
+  keyMap: {
+    id: "chatId",
+    role: "sender",
+    content: "body",
+  },
+  roleResolver: (sender) => {
+    return sender === "ai" ? "AI" : "USER"
+  }
 });
 ```
 
@@ -517,7 +535,8 @@ const {
 | `initialPageParam` | `unknown`                                                                         | ✅        | 첫 페이지 요청 시 사용할 pageParam                                          |
 | `getNextPageParam` | `(lastPage: Message[], allPages: Message[][]) => unknown` | ✅        | 다음 페이지 요청을 위한 pageParam 계산 함수                                     |
 | `mutationFn`       | `(content: string) => Promise<Raw>`                                              | ✅        | 음성 인식 결과를 받아 AI 응답 1개를 반환하는 함수                          |
-| `map`              | `(raw: Raw) => { id; role; content }`                                            | ✅        | Raw 데이터를 Message 구조로 매핑하는 함수                                      |
+| `keyMap` | `{ id: keyof Raw; role: keyof Raw; content: keyof Raw }` | ✅ | Raw 필드와 Message(id, role, content) 필드 간의 키 매핑 정의 |
+| `roleResolver` | `(value: Raw[KeyMap["role"]]) => "AI" \| "USER"` | ✅ | Raw의 role 값을 내부 표준 role 타입으로 정규화하는 함수 |                                   |
 | `onError`          | `(error: unknown) => void`                                                        | ❌        | mutation 에러 발생 시 호출되는 콜백                                          |
 | `staleTime`        | `number`                                                                          | ❌        | 캐시가 fresh 상태로 유지되는 시간 (ms)                                        |
 | `gcTime`           | `number`                                                                          | ❌        | 캐시가 GC 되기 전까지 유지되는 시간 (ms)                                        |
@@ -897,3 +916,4 @@ CSS 우선 순위에 따라 스타일이 적용되지 않을 수 있습니다.
 # 📄 License
 MIT License © 2025  
 See the [LICENSE](./LICENSE) file for details.
+
