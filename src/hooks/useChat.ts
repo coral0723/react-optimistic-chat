@@ -27,7 +27,7 @@ type Options<
   mutationFn: (content: string) => Promise<Raw>; 
 
   /* raw 데이터를 Message로 변환하는 mapper */
-  map: Map;
+  keyMap: Map;
 
   /* Raw의 role 값을 내부 표준 role 타입으로 변환하는 함수 */
   roleResolver: (value: Raw[Map["role"]]) => MessageCore["role"];
@@ -48,7 +48,7 @@ export default function useChat<
   initialPageParam,
   getNextPageParam,
   mutationFn,
-  map,
+  keyMap,
   roleResolver,
   onError, 
   staleTime = 0,
@@ -70,7 +70,7 @@ export default function useChat<
     queryFn: async ({ pageParam }) => {
       const rawList = await queryFn(pageParam);
       return rawList.map((raw) => 
-        buildMessage(raw, map, roleResolver)
+        buildMessage(raw, keyMap, roleResolver)
       );
     },
     getNextPageParam,
@@ -132,7 +132,7 @@ export default function useChat<
     },
     onSuccess: (rawAiResponse) => { 
       // 서버의 응답을 Message로 변환
-      const aiMessage = buildMessage(rawAiResponse, map, roleResolver);
+      const aiMessage = buildMessage(rawAiResponse, keyMap, roleResolver);
 
       queryClient.setQueryData<MessageInfiniteData<Raw, Map>>(queryKey, (old) => {
         if (!old) return old;

@@ -70,7 +70,7 @@ export default function UseVoiceChatPG() {
         throw new Error("강제 에러 발생 테스트");
       return sendAI(content);
     },
-    map: {
+    keyMap: {
       id: "chatId",
       role: "sender",
       content: "body",
