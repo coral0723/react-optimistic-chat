@@ -54,7 +54,7 @@ export default function UseVoiceChatPG() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = useVoiceChat<Raw>({
+  } = useVoiceChat({
     voice: voice,
     queryKey: ["chat", roomId],
     queryFn: (pageParam) => getChat(roomId, pageParam as number),
@@ -70,11 +70,14 @@ export default function UseVoiceChatPG() {
         throw new Error("강제 에러 발생 테스트");
       return sendAI(content);
     },
-    map: (raw) => ({
-      id: raw.chatId,
-      role: raw.sender === "ai" ? "AI" : "USER",
-      content: raw.body,
-    }),
+    keyMap: {
+      id: "chatId",
+      role: "sender",
+      content: "body",
+    },
+    roleResolver: (sender) => {
+      return sender === "ai" ? "AI": "USER"
+    },
     onError: (err) => {
       console.error(err);
       setErrorMessage("전송 중 오류가 발생했습니다.");
@@ -83,7 +86,7 @@ export default function UseVoiceChatPG() {
     gcTime: 60 * 10000
   });
 
-  const lastMessageEnd = messages[messages.length - 1]?.custom.end ? true : false;
+  const lastMessageEnd = messages[messages.length - 1]?.custom?.end ? true : false;
 
   return (
     <div className="max-w-xl mx-auto flex flex-col gap-4 p-4">
@@ -125,7 +128,9 @@ export default function UseVoiceChatPG() {
       <ChatList
         messages={messages}
         messageMapper={(msg) => ({
-          content: msg.custom.end === true ? "true입니당" : msg.content,
+          id: msg.id,
+          role: msg.role,
+          content: msg.custom!.end === true ? "true입니당" : msg.content,
         })}
         loadingRenderer={<SendingDots/>}
       />
