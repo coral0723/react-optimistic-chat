@@ -52,20 +52,21 @@ function buildMessage<
   roleResolver: (value: Raw[Map["role"]]) => MessageCore["role"]
 ): Message<Custom<Raw, Map>> {
   const core = buildCore(raw, map, roleResolver);
+  const custom = {} as Custom<Raw, Map>;
 
-  const custom = Object.keys(raw).reduce((acc, key) => {
-    if (!Object.values(map).includes(key as keyof Raw)) {
-      return {
-        ...acc,
-        [key]: raw[key as keyof Raw],
-      };
+  for (const key in raw) {
+    if (
+      key !== map.id &&
+      key !== map.role &&
+      key !== map.content
+    ) {
+      (custom as Record<string, unknown>)[key]= raw[key];
     }
-    return acc;
-  }, {} as Custom<Raw, Map>);
+  }
 
   return {
     ...core,
-    custom,
+    custom: custom as Custom<Raw, Map>,
   };
 }
 
