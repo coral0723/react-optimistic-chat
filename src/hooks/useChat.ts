@@ -1,7 +1,8 @@
-import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Message, MessageCore } from "../types/Message";
 import { useState } from "react";
 import { buildMessage, type Custom, type KeyMap } from "../internal/messageNormalizer";
+import type { MessageInfiniteData, MessagePage } from "../internal/messageCacheTypes";
 
 type Options<
   Raw extends Record<string, unknown>,
@@ -18,8 +19,8 @@ type Options<
   
   /* 다음 페이지를 가져오기 위한 pageParam 계산 함수 */
   getNextPageParam: (
-    lastPage: Message<Custom<Raw, Map>>[],
-    allPages: Message<Custom<Raw, Map>>[][]
+    lastPage: MessagePage<Raw, Map>,
+    allPages: MessagePage<Raw, Map>[]
   ) => unknown;
 
   /* 유저 입력(content)을 넘겨서 AI응답 1개를 받아오는 함수 */
@@ -63,7 +64,7 @@ export default function useChat<
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery<Message<Custom<Raw, Map>>[]>({
+  } = useInfiniteQuery<MessagePage<Raw, Map>>({
     queryKey,
     initialPageParam,
     queryFn: async ({ pageParam }) => {
@@ -83,13 +84,13 @@ export default function useChat<
     Raw, 
     unknown, 
     string, 
-    { prev?: InfiniteData<Message<Custom<Raw, Map>>[]> }
+    { prev?: MessageInfiniteData<Raw, Map> }
   >({
     mutationFn, // (content: string) => Promise<TMutationRaw>
     onMutate: async (content) => {
       setIsPending(true);
 
-      const prev = queryClient.getQueryData<InfiniteData<Message<Custom<Raw, Map>>[]>>(queryKey);
+      const prev = queryClient.getQueryData<MessageInfiniteData<Raw, Map>>(queryKey);
       
       // 조건부 cancleQueries
       if (prev) {
@@ -97,7 +98,7 @@ export default function useChat<
       }
 
       // query cache에 optimistic message를 직접 삽입
-      queryClient.setQueryData<InfiniteData<Message<Custom<Raw, Map>>[]>>(queryKey, (old) => {
+      queryClient.setQueryData<MessageInfiniteData<Raw, Map>>(queryKey, (old) => {
         if (!old) return old;
 
         const pages = [...old.pages];
@@ -133,7 +134,7 @@ export default function useChat<
       // 서버의 응답을 Message로 변환
       const aiMessage = buildMessage(rawAiResponse, map, roleResolver);
 
-      queryClient.setQueryData<InfiniteData<Message<Custom<Raw, Map>>[]>>(queryKey, (old) => {
+      queryClient.setQueryData<MessageInfiniteData<Raw, Map>>(queryKey, (old) => {
         if (!old) return old;
 
         const pages = [...old.pages];
