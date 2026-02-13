@@ -1,7 +1,7 @@
 type ChatRole = "AI" | "USER";
 
 // 라이브러리 내부에서 불변으로 보장되는 최소 메시지 구조
-export type BaseMessage = {
+type BaseMessage = {
   id: number | string;
   role: ChatRole;
   content: string;
